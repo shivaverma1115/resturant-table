@@ -1,0 +1,92 @@
+@import "tailwindcss";
+
+/* Theme tokens — light on `:root`, dark when `next-themes` adds `class="dark"` on `html` */
+@import "./theme/light.css";
+@import "./theme/dark.css";
+
+/* Class-based `dark:` utilities (matches `html.dark` from next-themes) */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
+ * Tailwind theme bridge: maps CSS variables to utility names.
+ * Use: bg-background, text-foreground, border-border, text-muted, ring-ring, etc.
+ */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--text-muted);
+  --color-border: var(--border-default);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-surface-subtle: var(--surface-subtle);
+  --color-surface-muted: var(--surface-muted);
+  --color-danger: var(--danger);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --shadow-theme-sm: var(--shadow-sm);
+  --shadow-theme-md: var(--shadow-md);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--border-default);
+  }
+
+  html {
+    height: 100%;
+    min-height: 100dvh;
+    width: 100%;
+  }
+
+  body {
+    min-height: 100dvh;
+    height: 100%;
+    width: 100%;
+    background-color: var(--surface-page);
+    color: var(--text-primary);
+    font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/**
+ * Global UI error copy — use instead of ad-hoc `text-destructive` for consistency.
+ * Relies on `--danger` / `--danger-muted` from `theme/light.css` & `theme/dark.css`.
+ */
+@layer components {
+  /** Inline validation / field errors (under inputs, short text). */
+  .ui-error-message {
+    margin: 0;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    font-weight: 500;
+    color: var(--danger);
+  }
+
+  /** Prominent error panel (config missing, destructive actions, etc.). */
+  .ui-error-callout {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.5;
+    font-weight: 500;
+    color: var(--danger);
+    background-color: var(--danger-muted);
+    border: 1px solid color-mix(in srgb, var(--danger) 28%, transparent);
+    border-radius: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+
+  .ui-error-callout code {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--danger);
+    background: color-mix(in srgb, var(--danger) 12%, transparent);
+    padding: 0.125rem 0.375rem;
+    border-radius: 0.25rem;
+  }
+}

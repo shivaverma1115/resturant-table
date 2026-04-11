@@ -1,0 +1,51 @@
+/**
+ * Light theme — design tokens only.
+ * Dark overrides live in `dark.css`. Do not commit secret values here.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces */
+  --surface-page: #ffffff;
+  --surface-subtle: #fafafa;
+  --surface-muted: #f4f4f5;
+  --surface-elevated: #ffffff;
+
+  /* Text */
+  --text-primary: #18181b;
+  --text-secondary: #3f3f46;
+  --text-muted: #71717a;
+  --text-faint: #a1a1aa;
+
+  /* Borders & dividers */
+  --border-default: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --border-subtle: #f4f4f5;
+
+  /* Brand / interactive (aligned with emerald UI accents) */
+  --accent: #059669;
+  --accent-hover: #047857;
+  --accent-muted: #d1fae5;
+  --accent-foreground: #ffffff;
+
+  /* Semantic */
+  --danger: #dc2626;
+  --danger-muted: #fef2f2;
+  --warning: #d97706;
+  --success: #059669;
+
+  /* Focus ring (accessibility) */
+  --ring: #059669;
+  --ring-offset: #ffffff;
+
+  /* Shadows (subtle elevation) */
+  --shadow-color: 220 9% 46%;
+  --shadow-sm: 0 1px 2px rgb(var(--shadow-color) / 0.06);
+  --shadow-md: 0 4px 6px -1px rgb(var(--shadow-color) / 0.08),
+    0 2px 4px -2px rgb(var(--shadow-color) / 0.06);
+
+  /* Legacy aliases (used by @theme below) */
+  --background: var(--surface-page);
+  --foreground: var(--text-primary);
+}

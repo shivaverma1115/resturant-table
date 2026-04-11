@@ -1,0 +1,494 @@
+# QR Ordering SaaS - Cursor Rules
+
+## 1. Project Overview
+
+Production-grade SaaS for **restaurant and food-store owners**: they sign up, create one or more stores, define tables, and print or display **QR codes per table**. **Customers** scan a QR (no account required unless you add it), land on that store’s menu for that table, and place orders. Owners track orders per store and per table in near real time.
+
+Built with Next.js (App Router) and Firebase.
+
+Core flows:
+- **STORE_OWNER:** authenticate → manage stores, tables, menus (as features land) → generate QR per table
+- **CUSTOMER:** scan QR → `store/{storeId}/table/{tableId}` → browse menu → submit order
+- **SUPER_ADMIN:** platform operations
+
+**Scale target:** design and implement for **at least 10k active users** (owners + staff + concurrent diners) without architectural rewrites; avoid patterns that break before **50k+**.
+
+---
+
+## 2. Roles & Access Control
+
+### Roles
+- SUPER_ADMIN → Platform owner (full access)
+- STORE_OWNER → Owns and manages stores
+- CUSTOMER → Places orders via QR
+
+---
+
+## 3. Tech Stack
+
+- Frontend: Next.js (App Router, TypeScript)
+- Backend: Firebase (BaaS)
+- Database: Firestore
+- Authentication: Firebase Auth
+- Storage: Firebase Storage
+- Server Logic: Firebase Cloud Functions
+- State Management:
+    - TanStack Query (server state, caching, deduping — tune `staleTime` / `gcTime` for menu and store data to cut Firestore reads)
+    - Zustand (lightweight client/UI state)
+    - Redux (only for complex global orchestration)
+- Forms: React Hook Form + Zod
+- Styling: Tailwind CSS v4
+- UI primitives: **`@/components/ui`** — `Button`, `Input`, `Select`, `Textarea`, `Label` built with **class-variance-authority**, **`cn()`** (`clsx` + `tailwind-merge` in `src/lib/cn.ts`), **`@radix-ui/react-slot`** for `Button asChild` (e.g. wrap `next/link`). Prefer these over ad-hoc styled `<button>` / `<input>` for consistency.
+- Icons: **lucide-react** (consistent stroke icons; import named icons only as needed)
+- Theme: **next-themes** (`ThemeProvider` in root `layout.tsx`, `attribute="class"` on `<html>`). Light tokens in `src/app/theme/light.css`; dark tokens when `html.dark` in `theme/dark.css`. Global toggle: **`ThemeToggle`** in `src/components/shared/ThemeToggle.tsx` (Sun / Moon from Lucide). Use `dark:` Tailwind variants for component-level dark styles; prefer CSS variables (`--surface-page`, etc.) for theme-aware colors.
+
+---
+
+## 4. Core Features
+
+### 4.1 Authentication
+- Email/Password login
+- Secure session handling
+- Role-based access control
+
+---
+
+### 4.2 Store Management
+- Create, update, delete stores
+- Manage store dashboard
+
+---
+
+### 4.3 Table & QR System
+- Each store can create multiple tables
+- Each table has a unique QR code
+
+QR Format:
+https://yourapp.com/store/{storeId}/table/{tableId}
+
+---
+
+### 4.4 Order System
+- Customer scans QR → lands on store page
+- Table is auto-detected
+- Customer places order
+
+Order fields:
+- storeId
+- tableId
+- items[]
+- customerDetails (optional)
+- status → pending | preparing | completed
+- createdAt
+
+---
+
+### 4.5 Real-Time Updates
+- Use Firestore listeners **only where live UI is required** (e.g. kitchen / owner order board).
+- **Scope every listener** to a single store path (`stores/{storeId}/orders/...`) with `where`, `orderBy`, and **`limit()`**; never attach a listener to an unbounded collection.
+- **Paginate** order lists; use cursors (`startAfter` / `endBefore`). **Unsubscribe** on route change or unmount to avoid duplicate streams at scale.
+
+---
+
+## 5. Folder Structure (MANDATORY)
+
+Repository layout (Next.js app under `src/`, Firebase indexes at repo root, tests outside `src/` so tooling stays simple):
+
+my-app/
+├── firebase/
+│ └── firestore.indexes.json   ← versioned composite indexes; update whenever queries change (§14, §5.2)
+├── tests/
+│ ├── unit/
+│ ├── integration/
+│ └── e2e/
+├── functions/                 ← optional: add Firebase Cloud Functions here (rate limits, order validation)
+└── src/
+    ├── app/
+    │ ├── (local)/             ← route group: **all UI pages** (name not in URL) — keeps pages separate from API tree
+    │ │ ├── (home)/            ← `/` — `page.tsx` + `components/`
+    │ │ │ ├── components/
+    │ │ │ └── page.tsx
+    │ │ ├── (auth)/            ← `/login`, `/signup`
+    │ │ │ ├── login/
+    │ │ │ └── signup/
+    │ │ ├── (dashboard)/       ← `/dashboard`, `/dashboard/stores`
+    │ │ │ └── dashboard/
+    │ │ ├── (admin)/           ← `/admin`, `/admin/activity`
+    │ │ │ └── admin/
+    │ │ └── store/[storeId]/table/[tableId]/   ← public QR ordering
+    │ │     ├── components/
+    │ │     ├── page.tsx
+    │ │     ├── loading.tsx
+    │ │     └── error.tsx
+    │ ├── (api)/               ← route group: **HTTP handlers only** (name not in URL); still need real `api` segment for `/api/*`
+    │ │ └── api/
+    │ │     └── health/
+    │ │         └── route.ts   ← thin `GET` → `NextResponse.json(...)`; logic in `src/server/api/`
+    │ ├── layout.tsx           ← root layout; `globals.css`, `theme/`, special files stay beside `(local)` / `(api)`
+    │ ├── globals.css          ← Tailwind + `@import` theme files + `@theme` bridge only
+    │ └── theme/
+    │     ├── light.css        ← light design tokens (`:root`)
+    │     └── dark.css         ← dark tokens when `next-themes` sets `class="dark"` on `<html>`
+    ├── features/              ← each feature: api.ts, hooks.ts, types.ts, components/
+    │ ├── auth/
+    │ ├── store/
+    │ ├── table/
+    │ ├── order/
+    │ └── admin/
+    ├── components/
+    │ ├── ui/                  ← `Button` (variants + sizes), `Input`, `Select`, `Textarea`, `Label`; barrel `index.ts`
+    │ └── shared/
+    │     ├── ThemeProvider.tsx
+    │     ├── ThemeToggle.tsx
+    │     ├── AuthProvider.tsx
+    │     ├── PageLoading.tsx
+    │     ├── PageError.tsx
+    │     ├── PageNotFound.tsx
+    │     └── GoBackButton.tsx
+    ├── lib/
+    │ ├── config.ts          ← app configuration: `ENV`, routes, roles, `PRODUCT`, SEO, `appConfig` aggregate
+    │ ├── cn.ts              ← `cn()` merge helper for UI class names
+    │ ├── site.ts            ← root `metadata` helper (imports `@/lib/config`)
+    │ ├── env.ts             ← `getPublicEnv()`, `isFirebaseWebConfigured()` — safe on client or server
+    │ ├── env.server.ts      ← `getServerEnv()` — server-only secrets; never import from Client Components
+    │ ├── firebase.ts        ← `getFirebaseWebConfig()` reads `env.ts` (wire `initializeApp` when deps added)
+    │ └── helpers.ts
+    ├── services/
+    │ ├── qr.service.ts
+    │ └── order.service.ts
+    ├── server/
+    │ └── api/                 ← HTTP handler logic (called from `app/(api)/api/**/route.ts` only)
+    │     └── health/
+    │         └── get-health-status.ts
+    ├── store/                 ← Zustand slices / client stores
+    └── types/                 ← optional cross-feature re-exports (`index.ts`)
+
+**Path alias:** `tsconfig.json` maps `@/*` → `./src/*` (e.g. `@/lib/config`, `@/server/api/health/get-health-status`, `@/components/ui`, `@/features/order/api`).
+
+### 5.0a App route groups — `(local)` vs `(api)` (MANDATORY)
+
+- **`src/app/(local)/`** — every **page** and page-specific `layout.tsx` / `loading.tsx` / `error.tsx` for UI routes. Parentheses mean `(local)` does **not** appear in the URL (`(home)/page.tsx` → `/`, `(local)/store/...` → `/store/...`).
+- **`src/app/(api)/api/`** — every **Route Handler** (`route.ts`). The inner folder must be named **`api`** so URLs remain **`/api/...`**; `(api)` is only an organizational wrapper (not in the URL). Example: `(api)/api/health/route.ts` → **`GET /api/health`**.
+- Keep **`layout.tsx`**, **`globals.css`**, **`theme/`**, **`global-error.tsx`**, root **`error.tsx`**, **`loading.tsx`**, **`not-found.tsx`** under **`src/app/`** (siblings of `(local)` and `(api)`).
+
+### 5.0 UI components (MANDATORY for forms & actions)
+
+- Import from **`@/components/ui`** (or per-file `@/components/ui/button`, etc.).
+- **`Button`** variants: `default`, `secondary`, `outline`, `ghost`, `destructive`, `link`. Sizes: `sm`, `md`, `lg`, `icon`, `icon-sm`, `icon-lg`. Use **`asChild`** to apply styles to `Link` or other elements via Radix `Slot`.
+- **`Input`**, **`Select`**, **`Textarea`**: variants `default` | `error` (e.g. validation). Pair with **`Label`** (`htmlFor` / `id`).
+- Compose with theme tokens (`border-border`, `bg-background`, `text-muted`); do not hardcode zinc hex for new screens unless matching legacy.
+
+### 5.1 App Router pages — `<Suspense>` (MANDATORY)
+
+- When creating or editing any `page.tsx` under `src/app/`, wrap the page body (the JSX returned by the page) in React `<Suspense>` with a `fallback` (for example a loading skeleton or spinner).
+- Import `Suspense` from `react`. Use nested `<Suspense>` when only part of the page should stream or suspend independently.
+
+### 5.1a Route colocation — `components/` next to `page.tsx` (MANDATORY)
+
+- For every route that has a **`page.tsx`**, colocate route-specific UI in a **`components/`** folder **in the same directory as that `page.tsx`** (same pattern as `store/[storeId]/table/[tableId]/components/` + `page.tsx`). **Do not** use a global `src/app/components/` folder — each `page.tsx` has its own sibling `components/`.
+- **Root `/`:** Next.js only allows one page at `/`. Put the home **`page.tsx`** under **`src/app/(local)/(home)/page.tsx`** with `components/` beside it (both `(local)` and `(home)` are omitted from the URL).
+- **`page.tsx` stays thin:** import a **`*Wrapper`** component from `./components/…` inside `<Suspense>`; the wrapper composes **`*View`** (and hooks) as needed.
+- **Naming (component files = PascalCase):** use `SomethingWrapper.tsx` and `SomethingView.tsx` (or feature-prefixed equivalents, e.g. `LoginView.tsx`, `DashboardHomeWrapper.tsx`). Put optional route-only helpers under **`components/shared/`** (same PascalCase for component files).
+- **No separate mobile files:** do **not** add `*Mobile.tsx` (or parallel mobile-only trees). Use **one responsive** `*View` with Tailwind breakpoints (`sm:`, `md:`, etc.) or CSS. Do not split Desktop vs Mobile into sibling files.
+- **Global vs route components:** `src/components/` (under `src/`, not inside `app/`) remains for **shared** UI (`ui/`, `shared/` like `PageLoading`). **Route-specific** pieces live under `src/app/.../components/`.
+
+### 5.2 Scalability & capacity (MANDATORY — 10k+ users)
+
+- **Firestore reads/writes:** Prefer **narrow queries** + **`limit()`** + **pagination** on orders, tables, and menus. Index every composite query in **`firebase/firestore.indexes.json`** before shipping features that rely on it.
+- **Listeners:** One bounded subscription per surface (e.g. one store’s “active orders” view). No global `onSnapshot` on `orders`. Tear down listeners when the view closes.
+- **Hot documents:** Avoid a single doc that every write bumps (e.g. global order counter on `stores/{id}`). Use subcollections, sharded counters, or Cloud Functions–mediated aggregates if you need totals.
+- **Writes:** Use **batched writes** / **transactions** when updating multiple docs for one business action; avoid N sequential writes when one batch suffices.
+- **Public QR pages:** Minimize work on first paint — lazy-load non-critical UI, cache stable data with TanStack Query (`staleTime` for menus), use Next.js **static / ISR** where content is safe to cache; keep **dynamic** only where auth or per-request data demands it.
+- **Cloud Functions:** Validate **create order** server-side (store/table exists, payload shape, optional rate limits). Keep handlers **idempotent** where retries are possible.
+- **Media:** Menus and photos in **Firebase Storage** with reasonable image sizes; do not embed large binaries in Firestore fields.
+- **Bundle:** Code-split owner dashboard vs customer ordering routes; avoid loading admin-only code on public table pages.
+
+---
+
+## 6. Data Modeling Strategy (CRITICAL)
+
+Use **subcollections** so each store shards its own data (scales with number of stores, not one giant `orders` bucket):
+
+stores/{storeId}
+  ├── tables/{tableId}
+  ├── orders/{orderId}
+  └── (optional) menuItems/{itemId} — keep order line items denormalized only as much as needed for display/history
+
+users/{userId}
+
+- Keep **order documents small** (line items as compact structures); archive or TTL old orders if history grows very large (optional product decision, but plan queries accordingly).
+
+---
+
+## 7. Firestore Schema
+
+### users
+- id
+- email
+- role → SUPER_ADMIN | STORE_OWNER | CUSTOMER
+- first_name (optional)
+- last_name (optional)
+- avatar (optional)
+
+---
+
+### stores
+- id
+- ownerId
+- name
+- createdAt
+
+---
+
+### tables (subcollection)
+- id
+- tableNumber
+- qrUrl
+- createdAt
+
+---
+
+### orders (subcollection)
+- id
+- tableId
+- items[]
+- status
+- createdAt
+
+---
+
+## 8. Firestore Security Rules (CRITICAL)
+
+- SUPER_ADMIN → full access
+
+- STORE_OWNER:
+  - access only their stores (ownerId == auth.uid)
+
+- CUSTOMER:
+  - can create orders only
+
+Rules:
+
+- stores:
+  - read/write → owner OR SUPER_ADMIN
+
+- tables:
+  - read → public (QR)
+  - write → owner OR SUPER_ADMIN
+
+- orders:
+  - create → public
+  - read/update → owner OR SUPER_ADMIN
+
+- NEVER allow unrestricted writes
+
+---
+
+## 9. API & Architecture Rules
+
+### HTTP APIs (Next.js `RouteHandler`) — pages vs API
+
+- **`src/app/(api)/api/**`** holds **only** route wiring: each folder has a thin **`route.ts`** that exports `GET` / `POST` / etc. and returns `NextResponse`. **No business logic** here beyond delegating to `src/server/api/`.
+- **`src/server/api/<resource>/`** holds **handlers, response types, and validation** (e.g. Zod). One file per action is fine (`get-health-status.ts`, `create-order.ts`). Import those from `app/(api)/api/.../route.ts`.
+- **`src/app/(local)/`** holds all **`page.tsx`** trees so **pages** and **API route files** are physically separated in the repo.
+
+### Client / feature data layer (Firebase, TanStack Query)
+
+- NEVER call Firebase directly in UI
+- Use:
+
+features/*/api.ts  
+features/*/hooks.ts  
+services/*  
+
+Each feature must contain:
+- api.ts
+- hooks.ts
+- types.ts
+- components/
+
+---
+
+## 10. Routing & Middleware
+
+### Routes
+- /admin/* → SUPER_ADMIN only
+- /dashboard/* → STORE_OWNER only
+- /store/* → public
+
+### Validation
+- storeId must exist
+- tableId must belong to store
+
+---
+
+## 11. QR Code Rules
+
+- Generate QR in qr.service.ts
+- Always map to:
+
+/store/{storeId}/table/{tableId}
+
+---
+
+## 12. Environment Modes
+
+### Development
+- Firebase Emulator
+- Debug logs enabled
+
+### Test
+- Separate Firebase project
+- Mock/test data
+
+### Production
+- Live Firebase
+- Strict rules
+- Logging enabled
+
+---
+
+## 13. Performance Rules
+
+Follow **§5.2** for capacity. Additionally:
+
+- **Firestore:** `limit()` + `orderBy()` on every list query; cursor-based pagination for order history; composite indexes for any multi-field filter + sort.
+- **React:** Avoid unnecessary re-renders (stable query keys, memoize expensive child lists when profiling shows benefit); lazy-load heavy dashboard widgets.
+- **Next.js:** Prefer static/ISR for marketing and stable public content; use `loading.tsx` / Suspense fallbacks so navigations stay responsive under load.
+
+---
+
+## 14. Firestore Indexing Rules
+
+Define composites for real queries under `stores/{storeId}/orders` (and tables), for example:
+
+- `orders`: `createdAt` DESC (default feed)
+- `orders`: `status` ASC + `createdAt` DESC (kitchen filters)
+- Any `where` + `orderBy` combination used in production **must** have a matching index; ship **`firebase/firestore.indexes.json`** with the repo.
+
+Use **collection-group queries** only if absolutely required — they need explicit indexes and can be expensive; prefer store-scoped paths.
+
+---
+
+## 15. Error Handling
+
+- Show user-friendly errors
+- Handle network failures
+- Log all critical errors
+
+---
+
+## 16. Logging & Monitoring
+
+- Log:
+  - order creation
+  - updates
+  - failures
+
+- Tools:
+  - Firebase Logs
+  - Optional: Sentry
+
+- Never log sensitive data
+
+---
+
+## 17. Testing Rules (STRICT)
+
+- Colocate by kind under repo root: `tests/unit/`, `tests/integration/`, `tests/e2e/` (not inside `src/`).
+- Unit tests → business logic (`lib/`, `services/`, pure feature helpers)
+- Integration tests → Firebase flows (Emulator)
+- E2E tests → QR → order flow
+
+Tools:
+- Firebase Emulator Suite
+- Jest
+- React Testing Library
+
+---
+
+## 18. Abuse Protection
+
+- Rate limit **order creation** (per IP / per table / per store — choose policy in Functions) to protect Firestore and owner UX at volume.
+- Validate inputs with **Zod** on the client and **again** in Cloud Functions for anything security- or billing-related.
+- Reject obviously invalid `storeId` / `tableId` pairs server-side; consider CAPTCHA or throttles if spam appears.
+- Use Firebase Functions for enforcement so rules stay centralized as traffic grows.
+
+---
+
+## 19. Caching Strategy
+
+- TanStack Query: set sensible **`staleTime`** for menus and store metadata; use **`placeholderData`** / prefetch on hover for owner dashboard where it helps.
+- Deduplicate identical in-flight requests; avoid refetch-on-window-focus for data that rarely changes unless the UX requires freshness.
+- Align caching with **§5.2** — fewer redundant Firestore reads is the main cost and latency lever at 10k+ users.
+
+---
+
+## 20. Deployment Strategy
+
+- Frontend → Vercel
+- Backend → Firebase
+
+Environments:
+- dev → emulator
+- test → staging
+- prod → live
+
+Use env variables:
+- NEXT_PUBLIC_FIREBASE_API_KEY
+- NEXT_PUBLIC_FIREBASE_PROJECT_ID
+
+---
+
+## 21. Naming Conventions
+
+- Components → PascalCase
+- Hooks → useSomething
+- Files → kebab-case
+- Constants → UPPER_SNAKE_CASE
+
+---
+
+## 22. Code Rules (STRICT)
+
+- TypeScript strict mode
+- No `any`
+- Clean architecture
+- Modular design
+
+---
+
+## 23. Important Rules
+
+❌ No business logic in UI  
+❌ No direct Firebase calls in components  
+❌ No hardcoded values  
+❌ No unbounded Firestore queries or listeners  
+❌ No `*Mobile.tsx` (or Desktop/Mobile file pairs) under `src/app/` — one responsive `*View` + **§5.1a**  
+
+✅ Modular, testable features  
+✅ Route colocation: **`components/`** beside each **`page.tsx`** (**§5.1a**)  
+✅ **§5.2** applied to new screens and APIs  
+✅ Baseline target: **10k+ active users**; architecture must not block growth toward **50k+** without a deliberate redesign  
+
+---
+
+## 24. Future Features (Design Ready)
+
+- Menu management
+- Payments integration
+- Notifications
+- Staff roles
+- Analytics dashboard
+
+---
+
+## 25. Final Principle
+
+This is a **real SaaS product**, not a demo.
+
+Every decision must consider:
+- Scalability
+- Maintainability
+- Performance
+- Security

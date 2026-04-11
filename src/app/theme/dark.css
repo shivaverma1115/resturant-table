@@ -1,0 +1,43 @@
+/**
+ * Dark theme — applied when `next-themes` sets `class="dark"` on `<html>`.
+ * Tokens mirror `light.css` so components can rely on the same variable names.
+ */
+
+html.dark {
+  color-scheme: dark;
+
+  --surface-page: #0a0a0a;
+  --surface-subtle: #18181b;
+  --surface-muted: #27272a;
+  --surface-elevated: #18181b;
+
+  --text-primary: #fafafa;
+  --text-secondary: #d4d4d8;
+  --text-muted: #a1a1aa;
+  --text-faint: #71717a;
+
+  --border-default: #27272a;
+  --border-strong: #3f3f46;
+  --border-subtle: #18181b;
+
+  --accent: #34d399;
+  --accent-hover: #6ee7b7;
+  --accent-muted: #064e3b;
+  --accent-foreground: #022c22;
+
+  --danger: #f87171;
+  --danger-muted: #450a0a;
+  --warning: #fbbf24;
+  --success: #34d399;
+
+  --ring: #34d399;
+  --ring-offset: #0a0a0a;
+
+  --shadow-color: 0 0% 0%;
+  --shadow-sm: 0 1px 2px rgb(var(--shadow-color) / 0.2);
+  --shadow-md: 0 4px 6px -1px rgb(var(--shadow-color) / 0.25),
+    0 2px 4px -2px rgb(var(--shadow-color) / 0.2);
+
+  --background: var(--surface-page);
+  --foreground: var(--text-primary);
+}
