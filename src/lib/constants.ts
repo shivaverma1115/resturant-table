@@ -25,6 +25,7 @@ export const ROUTES = {
   SIGNUP: "/signup",
   DASHBOARD: "/dashboard",
   DASHBOARD_STORES: "/dashboard/stores",
+  DASHBOARD_STORE_SETTINGS: "/dashboard/stores/settings",
   DASHBOARD_ORDERS: "/dashboard/orders",
   DASHBOARD_PROFILE: "/dashboard/profile",
   ADMIN: "/admin",
@@ -37,6 +38,12 @@ export function routeStoreTable(storeId: string, tableId: string): string {
   const s = encodeURIComponent(storeId);
   const t = encodeURIComponent(tableId);
   return `/${ROUTE_SEGMENTS.STORE}/${s}/${ROUTE_SEGMENTS.TABLE}/${t}`;
+}
+
+/** Owner dashboard: settings for a specific store document. */
+export function routeDashboardStoreSettings(storeId: string): string {
+  const s = encodeURIComponent(storeId);
+  return `${ROUTES.DASHBOARD_STORES}/${s}/settings`;
 }
 
 // ─── Domain model (align with Firestore / rules) ───────────────────────────
