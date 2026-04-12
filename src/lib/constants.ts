@@ -8,6 +8,9 @@ export const AUTH_COOKIE = {
   SESSION_NAME: "fb_session",
 } as const;
 
+/** Exact phrase users must type to permanently delete their account (API + UI). */
+export const ACCOUNT_DELETE_CONFIRM_PHRASE = "DELETE MY ACCOUNT" as const;
+
 // ─── URLs & routing ─────────────────────────────────────────────────────────
 
 export const DEFAULT_URLS = {

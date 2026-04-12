@@ -1,6 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { signOut } from "firebase/auth";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -12,6 +14,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  ACCOUNT_DELETE_CONFIRM_PHRASE,
+  ROUTES,
+} from "@/lib/constants";
 import { getFirebaseClientAuth } from "@/lib/firebase-client";
 import { showErrorMessage, showSuccessMessage } from "@/lib/notify";
 import type { ProfileResponse } from "@/lib/profile-types";
@@ -68,10 +74,13 @@ export function ProfileView({
   initialProfile,
   initialError,
 }: ProfileViewProps = {}) {
+  const router = useRouter();
   const fetchOnMount =
     initialProfile === undefined && initialError === undefined;
 
   const [profileState, setProfileState] = useState<ProfileState>(() => initialProfileState(initialProfile, initialError),);
+  const [accountDeletePhrase, setAccountDeletePhrase] = useState("");
+  const [accountDeleting, setAccountDeleting] = useState(false);
 
   const loadProfile = useCallback(async () => {
     setProfileState({ status: "loading" });
@@ -118,6 +127,54 @@ export function ProfileView({
       age: String(profileState.record?.profile.age ?? "")
     });
   }, [profileState, reset]);
+
+  const onDeleteAccount = useCallback(async () => {
+    if (accountDeletePhrase.trim() !== ACCOUNT_DELETE_CONFIRM_PHRASE) {
+      showErrorMessage(
+        `Type exactly ${ACCOUNT_DELETE_CONFIRM_PHRASE} in the box to confirm.`,
+      );
+      return;
+    }
+    setAccountDeleting(true);
+    try {
+      const res = await fetch("/api/account/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          confirmPhrase: ACCOUNT_DELETE_CONFIRM_PHRASE,
+        }),
+      });
+      const data = (await res.json().catch(() => null)) as {
+        error?: string;
+        deletedStoreCount?: number;
+      } | null;
+      if (!res.ok) {
+        showErrorMessage(data?.error?.trim() ?? "Could not delete account.");
+        return;
+      }
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: "include",
+      }).catch(() => {
+        /* still proceed */
+      });
+      try {
+        await signOut(getFirebaseClientAuth());
+      } catch {
+        /* Firebase may be unavailable */
+      }
+      showSuccessMessage("Your account and data have been removed.");
+      router.replace(ROUTES.HOME);
+      router.refresh();
+    } catch (e: unknown) {
+      showErrorMessage(
+        e instanceof Error ? e.message : "Could not delete account.",
+      );
+    } finally {
+      setAccountDeleting(false);
+    }
+  }, [accountDeletePhrase, router]);
 
   const onSave = async (values: ProfileFormValues) => {
     const ageRaw = values.age?.trim() ?? "";
@@ -252,6 +309,48 @@ export function ProfileView({
             </Button>
           </div>
         </form>
+      </section>
+
+      <section className="rounded-2xl border border-destructive/40 bg-background p-6 shadow-theme-sm sm:p-8">
+        <h2 className="text-lg font-semibold text-destructive">Delete account</h2>
+        <p className="mt-1 text-sm text-muted">
+          Permanently deletes your Firebase login, profile, and{" "}
+          <strong className="text-foreground">every store you own</strong> (menu
+          items, Realtime Database orders and push subscriptions for those stores).
+          This cannot be undone.
+        </p>
+        <div className="mt-4 space-y-2">
+          <Label htmlFor="account-delete-confirm">Confirmation phrase</Label>
+          <Input
+            id="account-delete-confirm"
+            autoComplete="off"
+            placeholder={ACCOUNT_DELETE_CONFIRM_PHRASE}
+            value={accountDeletePhrase}
+            onChange={(e) => setAccountDeletePhrase(e.target.value)}
+            disabled={accountDeleting}
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-muted">
+            Type{" "}
+            <span className="font-mono font-medium text-foreground">
+              {ACCOUNT_DELETE_CONFIRM_PHRASE}
+            </span>{" "}
+            to enable the button below.
+          </p>
+        </div>
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={
+              accountDeleting ||
+              accountDeletePhrase.trim() !== ACCOUNT_DELETE_CONFIRM_PHRASE
+            }
+            onClick={() => void onDeleteAccount()}
+          >
+            {accountDeleting ? "Deleting…" : "Delete my account forever"}
+          </Button>
+        </div>
       </section>
     </div>
   );
