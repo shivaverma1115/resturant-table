@@ -21,13 +21,17 @@ import {
 } from "lucide-react";
 
 import { TableOrderView } from "@/app/(local)/store/[storeId]/table/[tableId]/components/TableOrderView";
+import { StoreMenuItemCard } from "@/components/shared/StoreMenuItemCard";
 import { Button } from "@/components/ui/button";
+import { useStoreItemsList } from "@/features/store-items/hooks";
+import type { StoreItemDto } from "@/features/store-items/types";
 import type { StoreDto } from "@/features/store/types";
 import {
   PRODUCT,
   ROUTES,
   routeApiStoreLocalCover,
   routeDashboardStoreEdit,
+  routeDashboardStoreItems,
   routeStoreTable,
 } from "@/lib/constants";
 import { cn } from "@/lib/cn";
@@ -44,6 +48,7 @@ const AMENITY_ROWS = [
   "Draft / live visibility control",
   "Public note on guest screen",
   "Cover image or video (optional)",
+  "Menu line items (name, price, availability)",
 ] as const;
 
 function TabButton({
@@ -78,10 +83,72 @@ function TabButton({
   );
 }
 
+function formatItemPrice(cents: number): string {
+  return (cents / 100).toFixed(2);
+}
+
+type MenuFetchStatus = "idle" | "loading" | "success" | "error";
+
+function PreviewMenuContent({
+  storeId,
+  storeName,
+  menuItems,
+  menuStatus,
+  menuError,
+}: Readonly<{
+  storeId: string;
+  storeName: string;
+  menuItems: StoreItemDto[];
+  menuStatus: MenuFetchStatus;
+  menuError: string | null;
+}>) {
+  const loading = menuStatus === "idle" || menuStatus === "loading";
+  const showGrid = menuStatus === "success" && menuItems.length > 0;
+
+  return (
+    <>
+      {loading ? (
+        <p className="mt-6 text-sm text-muted">Loading menu…</p>
+      ) : null}
+      {menuStatus === "error" && menuError ? (
+        <p className="mt-6 text-sm text-destructive">{menuError}</p>
+      ) : null}
+      {menuStatus === "success" && menuItems.length === 0 ? (
+        <p className="mt-6 text-sm text-muted">
+          No items yet.{" "}
+          <Link
+            href={routeDashboardStoreItems(storeId)}
+            className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+          >
+            Add menu items
+          </Link>
+          .
+        </p>
+      ) : null}
+      {showGrid ? (
+        <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {menuItems.map((it) => (
+            <StoreMenuItemCard
+              key={it.id}
+              name={it.name}
+              cuisineLine={it.description}
+              locationLine={storeName}
+              priceLabel={formatItemPrice(it.priceCents)}
+              isAvailable={it.isAvailable}
+            />
+          ))}
+        </div>
+      ) : null}
+    </>
+  );
+}
+
 export function StorePreviewView({ store }: StorePreviewViewProps) {
   const previewTableId = "preview";
   const guestUrl = routeStoreTable(store.id, previewTableId);
   const [tab, setTab] = useState<PreviewTab>("overview");
+  const { items: menuItems, status: menuStatus, errorMessage: menuError } =
+    useStoreItemsList(store.id);
   const [copied, setCopied] = useState(false);
   const [origin, setOrigin] = useState("");
 
@@ -336,6 +403,32 @@ export function StorePreviewView({ store }: StorePreviewViewProps) {
                 </section>
 
                 <section className="space-y-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-foreground">
+                        Menu
+                      </h2>
+                      <p className="mt-1 text-xs text-muted">
+                        Everything you add under Manage items shows here on
+                        Overview and on the Menu tab.
+                      </p>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={routeDashboardStoreItems(store.id)}>
+                        Manage items
+                      </Link>
+                    </Button>
+                  </div>
+                  <PreviewMenuContent
+                    storeId={store.id}
+                    storeName={store.name}
+                    menuItems={menuItems}
+                    menuStatus={menuStatus}
+                    menuError={menuError}
+                  />
+                </section>
+
+                <section className="space-y-3">
                   <h2 className="text-lg font-semibold text-foreground">
                     About this listing
                   </h2>
@@ -391,19 +484,28 @@ export function StorePreviewView({ store }: StorePreviewViewProps) {
             ) : null}
 
             {tab === "menu" ? (
-              <section className="rounded-2xl border border-dashed border-border bg-surface-subtle/40 p-8 text-center">
-                <UtensilsCrossed
-                  className="mx-auto size-10 text-muted opacity-50"
-                  aria-hidden
+              <section className="rounded-2xl border border-border bg-background p-6 shadow-theme-sm sm:p-8">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h2 className="text-lg font-semibold text-foreground">Menu</h2>
+                    <p className="mt-1 text-xs text-muted">
+                      Same data guests will see once the guest menu is wired to
+                      this list.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={routeDashboardStoreItems(store.id)}>
+                      Manage items
+                    </Link>
+                  </Button>
+                </div>
+                <PreviewMenuContent
+                  storeId={store.id}
+                  storeName={store.name}
+                  menuItems={menuItems}
+                  menuStatus={menuStatus}
+                  menuError={menuError}
                 />
-                <h2 className="mt-4 text-lg font-semibold text-foreground">
-                  Menu catalog
-                </h2>
-                <p className="mx-auto mt-2 max-w-md text-sm text-muted">
-                  Connect your menu items and categories here later (prices,
-                  modifiers, photos). This tab is a layout placeholder matching a
-                  public restaurant page.
-                </p>
               </section>
             ) : null}
 

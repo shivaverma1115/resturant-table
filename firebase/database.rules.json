@@ -1,0 +1,20 @@
+{
+  "rules": {
+    "rtdbIndex": {
+      "storeOwners": {
+        "$storeId": {
+          ".read": false,
+          ".write": false
+        }
+      }
+    },
+    "storeOrders": {
+      "$storeId": {
+        ".read": "auth != null && root.child('rtdbIndex/storeOwners').child($storeId).val() === auth.uid",
+        "$orderId": {
+          ".write": false
+        }
+      }
+    }
+  }
+}

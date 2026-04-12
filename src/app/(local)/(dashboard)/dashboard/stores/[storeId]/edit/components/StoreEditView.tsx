@@ -20,6 +20,7 @@ import type { StoreDto } from "@/features/store/types";
 import { uploadStoreCoverMedia } from "@/features/store/upload-store-cover";
 import {
   ROUTES,
+  routeDashboardStoreItems,
   routeDashboardStorePreview,
   routeDashboardStoreSettings,
 } from "@/lib/constants";
@@ -43,7 +44,7 @@ const storeEditSchema = z.object({
     .max(120, "Store name is too long."),
   publicNote: z.string().max(500).optional(),
   usesPaidStorage: z.boolean(),
-  /** When true, public QR `/store/.../table/...` works for guests. */
+  /** When true, public guest links `/store/.../order?table=...` work for ordering. */
   isLive: z.boolean(),
   coverMedia: coverMediaSchema.optional(),
 });
@@ -244,6 +245,13 @@ export function StoreEditView({
             className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
           >
             Open store preview
+          </Link>
+          {" · "}
+          <Link
+            href={routeDashboardStoreItems(storeId)}
+            className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+          >
+            Menu items
           </Link>
         </p>
       </header>

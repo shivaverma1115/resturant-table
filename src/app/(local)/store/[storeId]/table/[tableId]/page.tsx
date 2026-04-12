@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
-import { PageLoading } from "@/components/shared/PageLoading";
 import {
   PAGE_TITLES,
   PRODUCT,
-  routeStoreTable,
+  routeStoreOrderAtTable,
   tableOrderMetaDescription,
 } from "@/lib/constants";
-
-import { TableOrderWrapper } from "./components/TableOrderWrapper";
 
 type TablePageParams = { storeId: string; tableId: string };
 
@@ -21,7 +18,7 @@ export async function generateMetadata({
   const { storeId, tableId } = await params;
   const title = PAGE_TITLES.TABLE_ORDER;
   const description = tableOrderMetaDescription(PRODUCT.NAME);
-  const path = routeStoreTable(storeId, tableId);
+  const path = routeStoreOrderAtTable(storeId, tableId);
 
   return {
     title,
@@ -45,13 +42,8 @@ type TableOrderPageProps = Readonly<{
   params: Promise<TablePageParams>;
 }>;
 
-export default async function TableOrderPage({ params }: TableOrderPageProps) {
+/** Legacy path — forwards to `/store/.../order?table=...` so table labels can use any characters. */
+export default async function LegacyTableOrderPage({ params }: TableOrderPageProps) {
   const { storeId, tableId } = await params;
-  return (
-    <Suspense
-      fallback={<PageLoading compact message="Preparing your table…" />}
-    >
-      <TableOrderWrapper storeId={storeId} tableId={tableId} />
-    </Suspense>
-  );
+  redirect(routeStoreOrderAtTable(storeId, tableId));
 }

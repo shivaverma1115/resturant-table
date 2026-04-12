@@ -4,6 +4,10 @@ import { getFirebaseAdminFirestore } from "@/lib/firebase-admin";
 
 import { mapStoreDocToDto } from "./map-store-doc";
 import { STORES_COLLECTION } from "./store-constants";
+import {
+  removeRtdbStoreOrdersSubtree,
+  removeRtdbStoreOwnerIndex,
+} from "./sync-rtdb-store-owner-index";
 
 export type DeleteStoreForOwnerResult =
   | { ok: true }
@@ -34,6 +38,8 @@ export async function deleteStoreForOwner(
       return { ok: false, status: 404, message: "Store not found." };
     }
 
+    await removeRtdbStoreOwnerIndex(id);
+    await removeRtdbStoreOrdersSubtree(id);
     await ref.delete();
     return { ok: true };
   } catch {

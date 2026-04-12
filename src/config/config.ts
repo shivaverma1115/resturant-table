@@ -22,6 +22,8 @@ export type FirebaseWebClientConfig = {
   messagingSenderId: string;
   appId: string;
   measurementId?: string;
+  /** Firebase Realtime Database URL (Console → Realtime Database). Enables live orders. */
+  databaseURL?: string;
 };
 
 /** `null` if required `NEXT_PUBLIC_FIREBASE_*` values are missing. */
@@ -55,7 +57,28 @@ export function getFirebaseWebClientConfig(): FirebaseWebClientConfig | null {
   };
   const mid = typeof c.measurementId === "string" ? c.measurementId.trim() : "";
   if (mid) out.measurementId = mid;
+
+  const dbUrlRaw = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL;
+  const dbUrl = typeof dbUrlRaw === "string" ? dbUrlRaw.trim() : "";
+  if (dbUrl) out.databaseURL = dbUrl;
+
   return out;
+}
+
+/**
+ * Realtime Database URL for Admin SDK and browser listeners.
+ * Set `NEXT_PUBLIC_FIREBASE_DATABASE_URL` (and optionally `FIREBASE_DATABASE_URL` on the server)
+ * to the URL shown in Firebase Console → Realtime Database after you create a database instance.
+ */
+export function getFirebaseRealtimeDatabaseUrl(): string | null {
+  const explicit =
+    process.env.FIREBASE_DATABASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL?.trim();
+  return explicit || null;
+}
+
+export function isFirebaseRealtimeDatabaseConfigured(): boolean {
+  return getFirebaseRealtimeDatabaseUrl() !== null;
 }
 
 /** Web API key (Identity Toolkit / REST). */

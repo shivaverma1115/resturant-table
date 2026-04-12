@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 import { PRODUCT, ROUTES } from "@/lib/constants";
 
@@ -20,12 +21,21 @@ export default function DashboardOrdersPage() {
           Orders
         </h1>
         <p className="mt-1 text-sm text-muted">
-          Live and past orders across your stores—connect Firestore listeners and
-          filters here.
+          Live guest orders (Firebase Realtime Database) are listed per store. Open
+          a store from{" "}
+          <Link
+            href={ROUTES.DASHBOARD_STORES}
+            className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+          >
+            Stores
+          </Link>{" "}
+          and choose <span className="font-medium text-foreground">Orders</span>{" "}
+          or <span className="font-medium text-foreground">QR</span> for table
+          codes.
         </p>
       </header>
       <div className="rounded-xl border border-dashed border-border bg-background/80 p-8 text-center text-sm text-muted">
-        Order list and filters will appear here.
+        Use each store&apos;s <strong>Orders</strong> page for the realtime list.
       </div>
     </main>
   );

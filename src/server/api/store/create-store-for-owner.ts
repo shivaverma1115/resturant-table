@@ -8,6 +8,7 @@ import { getFirebaseAdminFirestore } from "@/lib/firebase-admin";
 
 import { mapStoreDocToDto } from "./map-store-doc";
 import { STORES_COLLECTION } from "./store-constants";
+import { syncRtdbStoreOwnerIndex } from "./sync-rtdb-store-owner-index";
 
 const createStoreBodySchema = z
   .object({
@@ -57,6 +58,7 @@ export async function createStoreForOwner(
         message: "Store was created but could not be read back.",
       };
     }
+    await syncRtdbStoreOwnerIndex(dto.id, uid);
     return { ok: true, store: dto };
   } catch {
     return {

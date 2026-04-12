@@ -13,7 +13,7 @@ export type StoreDto = Readonly<{
    * With `NEXT_PUBLIC_LOCAL_COVER_MEDIA_ROOT`, saves as a full folder + file name.
    */
   coverMediaLocalPath: string | null;
-  /** When true, public `/store/.../table/...` ordering works for guests. */
+  /** When true, public `/store/.../order?table=...` ordering works for guests. */
   isLive: boolean;
   createdAt: string;
   updatedAt: string;

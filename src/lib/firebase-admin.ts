@@ -6,12 +6,17 @@ import {
   type App,
 } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
+import { getDatabase, type Database } from "firebase-admin/database";
 import { getFirestore, type Firestore } from "firebase-admin/firestore";
 
-import { getFirebaseWebProjectId } from "@/config/config";
+import {
+  getFirebaseRealtimeDatabaseUrl,
+  getFirebaseWebProjectId,
+} from "@/config/config";
 
 let app: App | undefined;
 let firestore: Firestore | undefined;
+let realtimeDb: Database | undefined;
 
 function stripOuterQuotesAndBom(raw: string): string {
   let s = raw.trim();
@@ -122,6 +127,7 @@ export function getFirebaseAdminApp(): App {
   if (app) return app;
 
   const cred = loadFirebaseAdminCredentialsFromEnv();
+  const rtdbUrl = getFirebaseRealtimeDatabaseUrl();
 
   try {
     if (cred) {
@@ -133,6 +139,7 @@ export function getFirebaseAdminApp(): App {
           clientEmail: cred.clientEmail,
           privateKey: cred.privateKey,
         }),
+        ...(rtdbUrl ? { databaseURL: rtdbUrl } : {}),
       });
       return app;
     }
@@ -142,6 +149,7 @@ export function getFirebaseAdminApp(): App {
       app = initializeApp({
         projectId: pid,
         credential: applicationDefault(),
+        ...(rtdbUrl ? { databaseURL: rtdbUrl } : {}),
       });
       return app;
     }
@@ -164,4 +172,18 @@ export function getFirebaseAdminFirestore(): Firestore {
     firestore = getFirestore(getFirebaseAdminApp());
   }
   return firestore;
+}
+
+/** Realtime Database (orders, owner index). Requires database URL in env. */
+export function getFirebaseAdminRealtimeDb(): Database {
+  const url = getFirebaseRealtimeDatabaseUrl();
+  if (!url?.trim()) {
+    throw new Error(
+      "Realtime Database is not configured. Set NEXT_PUBLIC_FIREBASE_DATABASE_URL (or FIREBASE_DATABASE_URL) to your database URL from the Firebase console.",
+    );
+  }
+  if (!realtimeDb) {
+    realtimeDb = getDatabase(getFirebaseAdminApp());
+  }
+  return realtimeDb;
 }

@@ -6,7 +6,10 @@ import {
   ROUTES,
   routeApiStoreLocalCover,
   routeDashboardStoreEdit,
+  routeDashboardStoreItems,
+  routeDashboardStoreLiveOrders,
   routeDashboardStorePreview,
+  routeDashboardStoreQr,
 } from "@/lib/constants";
 
 type StoreSettingsSummaryViewProps = Readonly<{
@@ -62,8 +65,10 @@ export function StoreSettingsSummaryView({
           </h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             Read-only overview. Use{" "}
-            <span className="font-medium text-foreground">Edit store</span> to
-            change name, cover, visibility, or delete this store.
+            <span className="font-medium text-foreground">Edit store</span> for
+            name, cover, and visibility, or{" "}
+            <span className="font-medium text-foreground">Menu items</span> for
+            the catalog.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -71,7 +76,16 @@ export function StoreSettingsSummaryView({
             <Link href={routeDashboardStoreEdit(storeId)}>Edit store</Link>
           </Button>
           <Button variant="outline" asChild>
+            <Link href={routeDashboardStoreItems(storeId)}>Menu items</Link>
+          </Button>
+          <Button variant="outline" asChild>
             <Link href={routeDashboardStorePreview(storeId)}>Preview</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={routeDashboardStoreQr(storeId)}>Table QR</Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link href={routeDashboardStoreLiveOrders(storeId)}>Live orders</Link>
           </Button>
         </div>
       </header>

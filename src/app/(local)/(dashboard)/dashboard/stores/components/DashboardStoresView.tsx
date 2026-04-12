@@ -6,7 +6,10 @@ import { useStoresList } from "@/features/store/hooks";
 import {
   ROUTES,
   routeDashboardStoreEdit,
+  routeDashboardStoreItems,
+  routeDashboardStoreLiveOrders,
   routeDashboardStorePreview,
+  routeDashboardStoreQr,
   routeDashboardStoreSettings,
 } from "@/lib/constants";
 
@@ -97,6 +100,24 @@ export function DashboardStoresView() {
                   className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
                 >
                   Preview
+                </Link>
+                <Link
+                  href={routeDashboardStoreItems(s.id)}
+                  className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
+                >
+                  Items
+                </Link>
+                <Link
+                  href={routeDashboardStoreQr(s.id)}
+                  className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
+                >
+                  QR
+                </Link>
+                <Link
+                  href={routeDashboardStoreLiveOrders(s.id)}
+                  className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
+                >
+                  Orders
                 </Link>
                 <Link
                   href={routeDashboardStoreSettings(s.id)}

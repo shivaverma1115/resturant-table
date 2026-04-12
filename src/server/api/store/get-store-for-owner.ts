@@ -5,6 +5,7 @@ import { getFirebaseAdminFirestore } from "@/lib/firebase-admin";
 
 import { mapStoreDocToDto } from "./map-store-doc";
 import { STORES_COLLECTION } from "./store-constants";
+import { syncRtdbStoreOwnerIndex } from "./sync-rtdb-store-owner-index";
 
 export type GetStoreForOwnerResult =
   | { ok: true; store: StoreDto }
@@ -29,6 +30,7 @@ export async function getStoreForOwner(
     if (!dto || dto.ownerId !== uid) {
       return { ok: false, status: 404, message: "Store not found." };
     }
+    void syncRtdbStoreOwnerIndex(dto.id, uid);
     return { ok: true, store: dto };
   } catch {
     return {

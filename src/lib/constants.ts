@@ -17,6 +17,8 @@ export const DEFAULT_URLS = {
 export const ROUTE_SEGMENTS = {
   STORE: "store",
   TABLE: "table",
+  /** Guest menu + cart + order (table label in `?table=`). */
+  ORDER: "order",
 } as const;
 
 /** App paths (route groups like `(auth)` are not part of the URL). */
@@ -34,10 +36,21 @@ export const ROUTES = {
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];
 
+/**
+ * Public guest URL for ordering at a table or area.
+ * Table label is in the query string so it can include spaces, symbols, and unicode
+ * (anything `URLSearchParams` can encode) without breaking the path.
+ */
+export function routeStoreOrderAtTable(storeId: string, tableLabel: string): string {
+  const s = encodeURIComponent(storeId.trim());
+  const q = new URLSearchParams();
+  q.set("table", tableLabel);
+  return `/${ROUTE_SEGMENTS.STORE}/${s}/${ROUTE_SEGMENTS.ORDER}?${q.toString()}`;
+}
+
+/** Same as {@link routeStoreOrderAtTable} — kept for existing call sites. */
 export function routeStoreTable(storeId: string, tableId: string): string {
-  const s = encodeURIComponent(storeId);
-  const t = encodeURIComponent(tableId);
-  return `/${ROUTE_SEGMENTS.STORE}/${s}/${ROUTE_SEGMENTS.TABLE}/${t}`;
+  return routeStoreOrderAtTable(storeId, tableId);
 }
 
 /** Owner dashboard: settings for a specific store document. */
@@ -58,11 +71,36 @@ export function routeDashboardStorePreview(storeId: string): string {
   return `${ROUTES.DASHBOARD_STORES}/${s}/preview`;
 }
 
+/** Owner dashboard: add/edit menu line items for a store. */
+export function routeDashboardStoreItems(storeId: string): string {
+  const s = encodeURIComponent(storeId);
+  return `${ROUTES.DASHBOARD_STORES}/${s}/items`;
+}
+
+/** Owner: generate table QR codes (any table label). */
+export function routeDashboardStoreQr(storeId: string): string {
+  const s = encodeURIComponent(storeId);
+  return `${ROUTES.DASHBOARD_STORES}/${s}/qr`;
+}
+
+/** Owner: live orders from Realtime Database for one store. */
+export function routeDashboardStoreLiveOrders(storeId: string): string {
+  const s = encodeURIComponent(storeId);
+  return `${ROUTES.DASHBOARD_STORES}/${s}/orders`;
+}
+
 /** Authenticated API: streams on-disk cover when using local (non-Storage) mode. */
 export function routeApiStoreLocalCover(storeId: string): string {
   const s = encodeURIComponent(storeId);
   return `/api/stores/${s}/local-cover`;
 }
+
+/**
+ * Demo dish photo for every menu item card until each item has its own image URL.
+ * Same asset used across preview, items dashboard, and any other menu UI.
+ */
+export const MENU_ITEM_CARD_IMAGE_URL =
+  "https://b.zmtcdn.com/data/pictures/chains/0/18583700/51b08d62731f30208fcaddb956c35a5c_featured_v2.jpg" as const;
 
 // ─── Domain model (align with Firestore / rules) ───────────────────────────
 
