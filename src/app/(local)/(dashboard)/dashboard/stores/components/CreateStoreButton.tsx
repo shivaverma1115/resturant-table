@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useCreateStore } from "@/features/store/hooks";
-import { routeDashboardStoreSettings } from "@/lib/constants";
+import { routeDashboardStoreEdit } from "@/lib/constants";
 import { notifyException } from "@/lib/notify";
 
 type CreateStoreButtonProps = Readonly<{
@@ -27,7 +27,7 @@ export function CreateStoreButton({
       onClick={async () => {
         try {
           const store = await create({ name: "My restaurant" });
-          router.push(routeDashboardStoreSettings(store.id));
+          router.push(routeDashboardStoreEdit(store.id));
           router.refresh();
         } catch (e: unknown) {
           notifyException(e, "Could not create store.");

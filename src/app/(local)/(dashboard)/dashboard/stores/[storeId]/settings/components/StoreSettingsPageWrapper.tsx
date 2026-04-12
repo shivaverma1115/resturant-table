@@ -1,7 +1,7 @@
 import { requireSessionUid } from "@/server/api/auth/require-session";
 import { getStoreForOwner } from "@/server/api/store/get-store-for-owner";
 
-import { StoreSettingsView } from "./StoreSettingsView";
+import { StoreSettingsSummaryView } from "./StoreSettingsSummaryView";
 
 export async function StoreSettingsPageWrapper({
   storeId,
@@ -9,10 +9,10 @@ export async function StoreSettingsPageWrapper({
   const session = await requireSessionUid();
   if (!session.ok) {
     return (
-      <StoreSettingsView
+      <StoreSettingsSummaryView
         storeId={storeId}
-        initialStore={null}
-        initialError="You need to be signed in to manage store settings."
+        store={null}
+        error="You need to be signed in to view store settings."
       />
     );
   }
@@ -20,15 +20,13 @@ export async function StoreSettingsPageWrapper({
   const result = await getStoreForOwner(session.uid, storeId);
   if (!result.ok) {
     return (
-      <StoreSettingsView
+      <StoreSettingsSummaryView
         storeId={storeId}
-        initialStore={null}
-        initialError={result.message}
+        store={null}
+        error={result.message}
       />
     );
   }
 
-  return (
-    <StoreSettingsView storeId={storeId} initialStore={result.store} />
-  );
+  return <StoreSettingsSummaryView storeId={storeId} store={result.store} />;
 }

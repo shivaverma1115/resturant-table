@@ -32,7 +32,7 @@ export async function generateMetadata({
   }
   return {
     title: `${result.store.name} · Store settings | ${PRODUCT.NAME}`,
-    description: `Update ${result.store.name} on ${PRODUCT.NAME}.`,
+    description: `View ${result.store.name} on ${PRODUCT.NAME}. Edit on the separate edit page.`,
     robots: { index: false, follow: true },
   };
 }

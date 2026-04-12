@@ -18,7 +18,11 @@ import { Label } from "@/components/ui/label";
 import { useDeleteStore, usePatchStore } from "@/features/store/hooks";
 import type { StoreDto } from "@/features/store/types";
 import { uploadStoreCoverMedia } from "@/features/store/upload-store-cover";
-import { ROUTES, routeDashboardStorePreview } from "@/lib/constants";
+import {
+  ROUTES,
+  routeDashboardStorePreview,
+  routeDashboardStoreSettings,
+} from "@/lib/constants";
 import { buildLocalCoverPath } from "@/lib/media/cover-path";
 import { notifyException, showSuccessMessage } from "@/lib/notify";
 
@@ -31,7 +35,7 @@ const coverMediaSchema = z
   })
   .nullable();
 
-const storeSettingsSchema = z.object({
+const storeEditSchema = z.object({
   storeName: z
     .string()
     .trim()
@@ -44,7 +48,7 @@ const storeSettingsSchema = z.object({
   coverMedia: coverMediaSchema.optional(),
 });
 
-export type StoreSettingsFormValues = z.infer<typeof storeSettingsSchema>;
+export type StoreEditFormValues = z.infer<typeof storeEditSchema>;
 
 function guessKindFromUrl(url: string): "image" | "video" {
   const u = url.toLowerCase();
@@ -75,17 +79,17 @@ function coverMediaFromStore(store: StoreDto) {
   };
 }
 
-type StoreSettingsViewProps = Readonly<{
+type StoreEditViewProps = Readonly<{
   storeId: string;
   initialStore: StoreDto | null;
   initialError?: string | null;
 }>;
 
-export function StoreSettingsView({
+export function StoreEditView({
   storeId,
   initialStore,
   initialError,
-}: StoreSettingsViewProps) {
+}: StoreEditViewProps) {
   const router = useRouter();
   const { patch, pending: patchPending } = usePatchStore();
   const { remove, pending: deletePending } = useDeleteStore();
@@ -97,8 +101,8 @@ export function StoreSettingsView({
     reset,
     setValue,
     formState: { errors, isSubmitting, dirtyFields },
-  } = useForm<StoreSettingsFormValues>({
-    resolver: zodResolver(storeSettingsSchema),
+  } = useForm<StoreEditFormValues>({
+    resolver: zodResolver(storeEditSchema),
     defaultValues: {
       storeName: "",
       publicNote: "",
@@ -126,7 +130,7 @@ export function StoreSettingsView({
     }
   }, [initialStore, reset]);
 
-  const onSave = async (values: StoreSettingsFormValues) => {
+  const onSave = async (values: StoreEditFormValues) => {
     if (!initialStore) return;
     try {
       const coverMediaDirty = Boolean(dirtyFields.coverMedia);
@@ -166,10 +170,10 @@ export function StoreSettingsView({
         coverMediaUrl,
         coverMediaLocalPath,
       });
-      showSuccessMessage("Store settings saved.");
+      showSuccessMessage("Changes saved.");
       router.refresh();
     } catch (e: unknown) {
-      notifyException(e, "Could not save store settings.");
+      notifyException(e, "Could not save changes.");
     }
   };
 
@@ -198,7 +202,7 @@ export function StoreSettingsView({
       <div className="space-y-6">
         <header>
           <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-            Store settings
+            Edit store
           </h1>
         </header>
         <p className="text-sm text-destructive">{initialError}</p>
@@ -220,14 +224,21 @@ export function StoreSettingsView({
     <div className="space-y-6">
       <header>
         <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-50">
-          Store settings
+          Edit store
         </h1>
         <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-          You own this store. Updates are saved to Firestore via{" "}
+          Updates are saved to Firestore via{" "}
           <code className="rounded bg-surface-subtle px-1 py-0.5 text-xs">
             PATCH /api/stores/{storeId}
           </code>
           .{" "}
+          <Link
+            href={routeDashboardStoreSettings(storeId)}
+            className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+          >
+            ← Store settings (overview)
+          </Link>
+          {" · "}
           <Link
             href={routeDashboardStorePreview(storeId)}
             className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
@@ -342,8 +353,8 @@ export function StoreSettingsView({
               )}
             />
             {initialStore.coverMediaLocalPath &&
-              !initialStore.coverMediaUrl &&
-              !usesPaidStorage ? (
+            !initialStore.coverMediaUrl &&
+            !usesPaidStorage ? (
               <p className="text-xs text-muted">
                 Saved local path:{" "}
                 <code className="rounded bg-surface-subtle px-1 py-0.5">
@@ -421,7 +432,10 @@ export function StoreSettingsView({
 
           <div className="flex flex-wrap gap-2 pt-2">
             <Button type="submit" disabled={formLocked}>
-              {formLocked ? "Saving…" : "Save settings"}
+              {formLocked ? "Saving…" : "Save changes"}
+            </Button>
+            <Button variant="outline" type="button" disabled={formLocked} asChild>
+              <Link href={routeDashboardStoreSettings(storeId)}>Cancel</Link>
             </Button>
           </div>
         </form>

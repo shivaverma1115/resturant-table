@@ -2,8 +2,11 @@ type TableOrderViewProps = Readonly<{
   storeName: string;
   tableId: string;
   publicNote?: string | null;
-  /** When set, show a guest-facing hint from the store. */
-  variant?: "default" | "preview";
+  /**
+   * `preview` — dashboard sample with owner banner.
+   * `preview_embedded` — same content, no banner (used inside richer preview shells).
+   */
+  variant?: "default" | "preview" | "preview_embedded";
 }>;
 
 export function TableOrderView({

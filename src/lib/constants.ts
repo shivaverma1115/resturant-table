@@ -46,6 +46,12 @@ export function routeDashboardStoreSettings(storeId: string): string {
   return `${ROUTES.DASHBOARD_STORES}/${s}/settings`;
 }
 
+/** Owner dashboard: edit store fields (name, cover, live flag, delete). */
+export function routeDashboardStoreEdit(storeId: string): string {
+  const s = encodeURIComponent(storeId);
+  return `${ROUTES.DASHBOARD_STORES}/${s}/edit`;
+}
+
 /** Owner dashboard: preview guest ordering UI before going live. */
 export function routeDashboardStorePreview(storeId: string): string {
   const s = encodeURIComponent(storeId);

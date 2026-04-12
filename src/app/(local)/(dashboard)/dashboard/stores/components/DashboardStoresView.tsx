@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useStoresList } from "@/features/store/hooks";
 import {
   ROUTES,
+  routeDashboardStoreEdit,
   routeDashboardStorePreview,
   routeDashboardStoreSettings,
 } from "@/lib/constants";
@@ -22,14 +23,18 @@ export function DashboardStoresView() {
           </h1>
           <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             Stores you own in Firestore (<code className="text-xs">ownerId</code>{" "}
-            matches your account). Use{" "}
+            matches your account). Open a store’s{" "}
+            <span className="font-medium text-foreground">Settings</span> for a
+            read-only overview, or{" "}
+            <span className="font-medium text-foreground">Edit</span> to change
+            fields. The{" "}
             <Link
               href={ROUTES.DASHBOARD_STORE_SETTINGS}
               className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
             >
               Store settings
             </Link>{" "}
-            to edit names and notes.
+            chooser picks which store to open.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -95,9 +100,15 @@ export function DashboardStoresView() {
                 </Link>
                 <Link
                   href={routeDashboardStoreSettings(s.id)}
-                  className="text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                  className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
                 >
                   Settings
+                </Link>
+                <Link
+                  href={routeDashboardStoreEdit(s.id)}
+                  className="text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+                >
+                  Edit
                 </Link>
               </div>
             </li>

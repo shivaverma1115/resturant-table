@@ -17,14 +17,15 @@ function isActive(pathname: string, href: string): boolean {
       pathname === ROUTES.DASHBOARD_STORES ||
       pathname === `${ROUTES.DASHBOARD_STORES}/`;
     if (!base) return false;
-    // `/dashboard/stores/{id}/settings` or `/preview` are not the list tab.
-    return !/\/stores\/[^/]+\/(settings|preview)/.test(pathname);
+    // Per-store settings, preview, or edit are not the list tab.
+    return !/\/stores\/[^/]+\/(settings|preview|edit)/.test(pathname);
   }
   if (href === ROUTES.DASHBOARD_STORE_SETTINGS) {
     return (
       pathname === ROUTES.DASHBOARD_STORE_SETTINGS ||
       pathname === `${ROUTES.DASHBOARD_STORE_SETTINGS}/` ||
-      /\/stores\/[^/]+\/settings/.test(pathname)
+      /\/stores\/[^/]+\/settings/.test(pathname) ||
+      /\/stores\/[^/]+\/edit/.test(pathname)
     );
   }
   return pathname === href || pathname.startsWith(`${href}/`);
