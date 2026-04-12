@@ -3,7 +3,11 @@
 import Link from "next/link";
 
 import { useStoresList } from "@/features/store/hooks";
-import { ROUTES, routeDashboardStoreSettings } from "@/lib/constants";
+import {
+  ROUTES,
+  routeDashboardStorePreview,
+  routeDashboardStoreSettings,
+} from "@/lib/constants";
 
 import { CreateStoreButton } from "./CreateStoreButton";
 
@@ -66,13 +70,29 @@ export function DashboardStoresView() {
             >
               <div className="min-w-0">
                 <p className="truncate font-medium text-foreground">{s.name}</p>
-                <p className="truncate text-xs text-muted">
+                <p className="mt-0.5 truncate text-xs text-muted">
+                  <span
+                    className={
+                      s.isLive
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-amber-700 dark:text-amber-500"
+                    }
+                  >
+                    {s.isLive ? "Live" : "Draft"}
+                  </span>
+                  <span className="mx-1.5 text-border">·</span>
                   <code className="rounded bg-surface-subtle px-1 py-0.5">
                     {s.id}
                   </code>
                 </p>
               </div>
-              <div className="flex shrink-0 gap-2">
+              <div className="flex shrink-0 flex-wrap gap-x-3 gap-y-1">
+                <Link
+                  href={routeDashboardStorePreview(s.id)}
+                  className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400"
+                >
+                  Preview
+                </Link>
                 <Link
                   href={routeDashboardStoreSettings(s.id)}
                   className="text-sm font-medium text-emerald-600 hover:underline dark:text-emerald-400"

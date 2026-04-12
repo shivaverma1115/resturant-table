@@ -3,31 +3,61 @@
 import { useCallback, useEffect, useState } from "react";
 
 import * as storeApi from "./api";
-import type { StoreDto, StoreListResponse } from "./types";
+import type { PatchStoreInput, StoreDto, StoreListResponse } from "./types";
 
 type AsyncStatus = "idle" | "loading" | "success" | "error";
+
+function isAbortError(e: unknown): boolean {
+  return e instanceof DOMException && e.name === "AbortError";
+}
 
 export function useStoresList(limit?: number, cursor?: string | null) {
   const [data, setData] = useState<StoreListResponse | null>(null);
   const [status, setStatus] = useState<AsyncStatus>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const refresh = useCallback(async () => {
-    setStatus("loading");
-    setErrorMessage(null);
-    try {
-      const res = await storeApi.fetchStoresList(limit, cursor ?? null);
-      setData(res);
-      setStatus("success");
-    } catch (e: unknown) {
-      setStatus("error");
-      setErrorMessage(e instanceof Error ? e.message : "Failed to load stores.");
-    }
-  }, [limit, cursor]);
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      if (signal?.aborted) {
+        return;
+      }
+      setStatus("loading");
+      setErrorMessage(null);
+      try {
+        const res = await storeApi.fetchStoresList(
+          limit,
+          cursor ?? null,
+          signal,
+        );
+        setData(res);
+        setStatus("success");
+      } catch (e: unknown) {
+        if (signal?.aborted || isAbortError(e)) {
+          return;
+        }
+        setStatus("error");
+        setErrorMessage(
+          e instanceof Error ? e.message : "Failed to load stores.",
+        );
+      }
+    },
+    [limit, cursor],
+  );
 
   useEffect(() => {
-    void Promise.resolve().then(() => refresh());
-  }, [refresh]);
+    const ac = new AbortController();
+    void Promise.resolve().then(() => {
+      if (ac.signal.aborted) {
+        return;
+      }
+      void load(ac.signal);
+    });
+    return () => ac.abort();
+  }, [load]);
+
+  const refresh = useCallback(() => {
+    void load();
+  }, [load]);
 
   return { data, status, errorMessage, refresh };
 }
@@ -53,7 +83,7 @@ export function usePatchStore() {
   const patch = useCallback(
     async (
       storeId: string,
-      input: { name?: string; publicNote?: string | null },
+      input: PatchStoreInput,
     ) => {
       setPending(true);
       try {

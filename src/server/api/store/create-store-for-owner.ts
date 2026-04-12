@@ -41,6 +41,10 @@ export async function createStoreForOwner(
       ownerId: uid,
       name: name.trim(),
       publicNote: note,
+      usesPaidStorage: false,
+      coverMediaUrl: null,
+      coverMediaLocalPath: null,
+      isLive: false,
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
     });

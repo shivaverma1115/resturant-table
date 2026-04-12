@@ -17,8 +17,8 @@ function isActive(pathname: string, href: string): boolean {
       pathname === ROUTES.DASHBOARD_STORES ||
       pathname === `${ROUTES.DASHBOARD_STORES}/`;
     if (!base) return false;
-    // `/dashboard/stores/{id}/settings` is the settings tab, not the list.
-    return !/\/stores\/[^/]+\/settings/.test(pathname);
+    // `/dashboard/stores/{id}/settings` or `/preview` are not the list tab.
+    return !/\/stores\/[^/]+\/(settings|preview)/.test(pathname);
   }
   if (href === ROUTES.DASHBOARD_STORE_SETTINGS) {
     return (

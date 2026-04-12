@@ -48,11 +48,38 @@ export function mapStoreDocToDto(
   const updatedAt =
     timestampToIso(data.updatedAt) ?? createdAt;
 
+  const usesPaidStorage =
+    typeof data.usesPaidStorage === "boolean" ? data.usesPaidStorage : false;
+
+  let coverMediaUrl: string | null = null;
+  if (typeof data.coverMediaUrl === "string" && data.coverMediaUrl.trim()) {
+    coverMediaUrl = data.coverMediaUrl.trim();
+  } else if (data.coverMediaUrl === null) {
+    coverMediaUrl = null;
+  }
+
+  let coverMediaLocalPath: string | null = null;
+  if (
+    typeof data.coverMediaLocalPath === "string" &&
+    data.coverMediaLocalPath.trim()
+  ) {
+    coverMediaLocalPath = data.coverMediaLocalPath.trim();
+  } else if (data.coverMediaLocalPath === null) {
+    coverMediaLocalPath = null;
+  }
+
+  const isLive =
+    typeof data.isLive === "boolean" ? data.isLive : true;
+
   return {
     id,
     ownerId: data.ownerId,
     name,
     publicNote,
+    usesPaidStorage,
+    coverMediaUrl,
+    coverMediaLocalPath,
+    isLive,
     createdAt,
     updatedAt,
   };

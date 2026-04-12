@@ -6,6 +6,8 @@ import { z } from "zod";
 import type { StoreDto } from "@/features/store/types";
 import { getFirebaseAdminFirestore } from "@/lib/firebase-admin";
 
+import { validateCoverMediaLocalPath } from "@/server/media/cover-local-path";
+
 import { mapStoreDocToDto } from "./map-store-doc";
 import { STORES_COLLECTION } from "./store-constants";
 
@@ -13,6 +15,17 @@ const patchStoreBodySchema = z
   .object({
     name: z.string().trim().min(1).max(120).optional(),
     publicNote: z.union([z.string().max(500), z.null()]).optional(),
+    usesPaidStorage: z.boolean().optional(),
+    coverMediaUrl: z
+      .union([
+        z.string().min(1).max(2048).regex(/^https?:\/\//i),
+        z.null(),
+      ])
+      .optional(),
+    coverMediaLocalPath: z
+      .union([z.string().min(1).max(2048), z.null()])
+      .optional(),
+    isLive: z.boolean().optional(),
   })
   .strict();
 
@@ -36,8 +49,23 @@ export async function patchStoreForOwner(
     return { ok: false, status: 400, message: msg };
   }
 
-  const { name, publicNote } = parsed.data;
-  if (name === undefined && publicNote === undefined) {
+  const {
+    name,
+    publicNote,
+    usesPaidStorage,
+    coverMediaUrl,
+    coverMediaLocalPath,
+    isLive,
+  } = parsed.data;
+
+  if (
+    name === undefined &&
+    publicNote === undefined &&
+    usesPaidStorage === undefined &&
+    coverMediaUrl === undefined &&
+    coverMediaLocalPath === undefined &&
+    isLive === undefined
+  ) {
     return {
       ok: false,
       status: 400,
@@ -65,6 +93,32 @@ export async function patchStoreForOwner(
     }
     if (publicNote !== undefined) {
       patch.publicNote = publicNote;
+    }
+    if (usesPaidStorage !== undefined) {
+      patch.usesPaidStorage = usesPaidStorage;
+    }
+    if (coverMediaUrl !== undefined) {
+      patch.coverMediaUrl = coverMediaUrl;
+    }
+    if (coverMediaLocalPath !== undefined) {
+      if (coverMediaLocalPath === null) {
+        patch.coverMediaLocalPath = null;
+      } else {
+        const v = validateCoverMediaLocalPath(coverMediaLocalPath);
+        if (!v.ok) {
+          return { ok: false, status: 400, message: v.message };
+        }
+        patch.coverMediaLocalPath = v.storedPath;
+      }
+    }
+    if (isLive !== undefined) {
+      patch.isLive = isLive;
+    }
+
+    if (usesPaidStorage === true) {
+      patch.coverMediaLocalPath = null;
+    } else if (usesPaidStorage === false) {
+      patch.coverMediaUrl = null;
     }
 
     await ref.set(patch, { merge: true });

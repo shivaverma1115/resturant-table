@@ -41,12 +41,17 @@ export async function generateMetadata({
   };
 }
 
-export default function TableOrderPage() {
+type TableOrderPageProps = Readonly<{
+  params: Promise<TablePageParams>;
+}>;
+
+export default async function TableOrderPage({ params }: TableOrderPageProps) {
+  const { storeId, tableId } = await params;
   return (
     <Suspense
       fallback={<PageLoading compact message="Preparing your table…" />}
     >
-      <TableOrderWrapper />
+      <TableOrderWrapper storeId={storeId} tableId={tableId} />
     </Suspense>
   );
 }

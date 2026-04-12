@@ -1,6 +1,7 @@
 import type {
   CreateStoreResponse,
   DeleteStoreResponse,
+  PatchStoreInput,
   PatchStoreResponse,
   StoreDto,
   StoreListResponse,
@@ -22,6 +23,7 @@ async function readErrorMessage(res: Response): Promise<string> {
 export async function fetchStoresList(
   limit?: number,
   cursor?: string | null,
+  signal?: AbortSignal,
 ): Promise<StoreListResponse> {
   const params = new URLSearchParams();
   if (limit !== undefined) params.set("limit", String(limit));
@@ -29,6 +31,7 @@ export async function fetchStoresList(
   const q = params.toString();
   const res = await fetch(`/api/stores${q ? `?${q}` : ""}`, {
     credentials: "include",
+    ...(signal ? { signal } : {}),
   });
   if (!res.ok) {
     throw new Error(await readErrorMessage(res));
@@ -64,7 +67,7 @@ export async function fetchStore(storeId: string): Promise<StoreDto> {
 
 export async function patchStore(
   storeId: string,
-  body: { name?: string; publicNote?: string | null },
+  body: PatchStoreInput,
 ): Promise<StoreDto> {
   const s = encodeURIComponent(storeId);
   const res = await fetch(`/api/stores/${s}`, {

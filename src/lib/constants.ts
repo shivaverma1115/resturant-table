@@ -46,6 +46,18 @@ export function routeDashboardStoreSettings(storeId: string): string {
   return `${ROUTES.DASHBOARD_STORES}/${s}/settings`;
 }
 
+/** Owner dashboard: preview guest ordering UI before going live. */
+export function routeDashboardStorePreview(storeId: string): string {
+  const s = encodeURIComponent(storeId);
+  return `${ROUTES.DASHBOARD_STORES}/${s}/preview`;
+}
+
+/** Authenticated API: streams on-disk cover when using local (non-Storage) mode. */
+export function routeApiStoreLocalCover(storeId: string): string {
+  const s = encodeURIComponent(storeId);
+  return `/api/stores/${s}/local-cover`;
+}
+
 // ─── Domain model (align with Firestore / rules) ───────────────────────────
 
 export const AUTH_ROLES = {

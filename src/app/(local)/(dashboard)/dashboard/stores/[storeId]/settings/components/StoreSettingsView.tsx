@@ -4,9 +4,10 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
+import { MediaUploadFormField } from "@/components/shared/media-upload";
 import {
   FormFieldError,
   formFieldAriaErrorId,
@@ -16,8 +17,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDeleteStore, usePatchStore } from "@/features/store/hooks";
 import type { StoreDto } from "@/features/store/types";
-import { ROUTES } from "@/lib/constants";
+import { uploadStoreCoverMedia } from "@/features/store/upload-store-cover";
+import { ROUTES, routeDashboardStorePreview } from "@/lib/constants";
+import { buildLocalCoverPath } from "@/lib/media/cover-path";
 import { notifyException, showSuccessMessage } from "@/lib/notify";
+
+const coverMediaSchema = z
+  .object({
+    url: z.string(),
+    mimeType: z.string(),
+    kind: z.enum(["image", "video"]),
+    file: z.instanceof(File).optional(),
+  })
+  .nullable();
 
 const storeSettingsSchema = z.object({
   storeName: z
@@ -26,9 +38,42 @@ const storeSettingsSchema = z.object({
     .min(1, "Enter a store name.")
     .max(120, "Store name is too long."),
   publicNote: z.string().max(500).optional(),
+  usesPaidStorage: z.boolean(),
+  /** When true, public QR `/store/.../table/...` works for guests. */
+  isLive: z.boolean(),
+  coverMedia: coverMediaSchema.optional(),
 });
 
 export type StoreSettingsFormValues = z.infer<typeof storeSettingsSchema>;
+
+function guessKindFromUrl(url: string): "image" | "video" {
+  const u = url.toLowerCase();
+  if (u.includes(".mp4") || u.includes(".webm") || u.includes("video")) {
+    return "video";
+  }
+  return "image";
+}
+
+function guessMimeFromUrl(url: string): string {
+  const u = url.toLowerCase();
+  if (u.endsWith(".png")) return "image/png";
+  if (u.endsWith(".webp")) return "image/webp";
+  if (u.endsWith(".gif")) return "image/gif";
+  if (u.endsWith(".mp4")) return "video/mp4";
+  if (u.endsWith(".webm")) return "video/webm";
+  return "image/jpeg";
+}
+
+function coverMediaFromStore(store: StoreDto) {
+  if (!store.coverMediaUrl?.trim()) {
+    return null;
+  }
+  return {
+    url: store.coverMediaUrl.trim(),
+    mimeType: guessMimeFromUrl(store.coverMediaUrl),
+    kind: guessKindFromUrl(store.coverMediaUrl),
+  };
+}
 
 type StoreSettingsViewProps = Readonly<{
   storeId: string;
@@ -47,15 +92,26 @@ export function StoreSettingsView({
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    setValue,
+    formState: { errors, isSubmitting, dirtyFields },
   } = useForm<StoreSettingsFormValues>({
     resolver: zodResolver(storeSettingsSchema),
     defaultValues: {
       storeName: "",
       publicNote: "",
+      usesPaidStorage: false,
+      isLive: false,
+      coverMedia: null,
     },
+  });
+
+  const usesPaidStorage = useWatch({
+    control,
+    name: "usesPaidStorage",
+    defaultValue: false,
   });
 
   useEffect(() => {
@@ -63,18 +119,52 @@ export function StoreSettingsView({
       reset({
         storeName: initialStore.name,
         publicNote: initialStore.publicNote ?? "",
+        usesPaidStorage: initialStore.usesPaidStorage,
+        isLive: initialStore.isLive,
+        coverMedia: coverMediaFromStore(initialStore),
       });
     }
   }, [initialStore, reset]);
 
   const onSave = async (values: StoreSettingsFormValues) => {
+    if (!initialStore) return;
     try {
+      const coverMediaDirty = Boolean(dirtyFields.coverMedia);
+      const publicNote =
+        values.publicNote?.trim() === ""
+          ? null
+          : (values.publicNote?.trim() ?? null);
+
+      let coverMediaUrl: string | null;
+      let coverMediaLocalPath: string | null;
+
+      if (values.usesPaidStorage) {
+        const u = values.coverMedia?.url?.trim();
+        coverMediaUrl =
+          u && /^https?:\/\//i.test(u) ? u : null;
+        coverMediaLocalPath = null;
+      } else {
+        coverMediaUrl = null;
+        if (values.coverMedia?.file) {
+          coverMediaLocalPath = buildLocalCoverPath(values.coverMedia.file.name);
+        } else if (
+          !coverMediaDirty &&
+          initialStore.coverMediaLocalPath?.trim() &&
+          !initialStore.coverMediaUrl?.trim()
+        ) {
+          coverMediaLocalPath = initialStore.coverMediaLocalPath.trim();
+        } else {
+          coverMediaLocalPath = null;
+        }
+      }
+
       await patch(storeId, {
         name: values.storeName.trim(),
-        publicNote:
-          values.publicNote?.trim() === ""
-            ? null
-            : (values.publicNote?.trim() ?? null),
+        publicNote,
+        usesPaidStorage: values.usesPaidStorage,
+        isLive: values.isLive,
+        coverMediaUrl,
+        coverMediaLocalPath,
       });
       showSuccessMessage("Store settings saved.");
       router.refresh();
@@ -137,7 +227,13 @@ export function StoreSettingsView({
           <code className="rounded bg-surface-subtle px-1 py-0.5 text-xs">
             PATCH /api/stores/{storeId}
           </code>
-          .
+          .{" "}
+          <Link
+            href={routeDashboardStorePreview(storeId)}
+            className="font-medium text-emerald-600 hover:underline dark:text-emerald-400"
+          >
+            Open store preview
+          </Link>
         </p>
       </header>
 
@@ -193,6 +289,136 @@ export function StoreSettingsView({
               message={errors.publicNote?.message}
             />
           </div>
+
+          <div className="space-y-2 rounded-lg border border-border p-4">
+            <Controller
+              name="usesPaidStorage"
+              control={control}
+              render={({ field }) => (
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4 shrink-0 rounded border-border accent-[var(--color-accent)]"
+                    checked={field.value}
+                    disabled={formLocked}
+                    onChange={(e) => {
+                      field.onChange(e.target.checked);
+                      setValue("coverMedia", null);
+                    }}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                  />
+                  <span className="min-w-0">
+                    <span className="font-medium text-foreground">
+                      Use Firebase Storage (paid quota)
+                    </span>
+                    <p className="mt-1 text-xs text-muted">
+                      When enabled, cover uploads go to your{" "}
+                      <code className="rounded bg-surface-subtle px-1 py-0.5">
+                        storageBucket
+                      </code>{" "}
+                      and the download URL is saved on the store. When disabled, a
+                      disk path is saved (no Storage). Set{" "}
+                      <code className="rounded bg-surface-subtle px-1 py-0.5">
+                        NEXT_PUBLIC_LOCAL_COVER_MEDIA_ROOT
+                      </code>{" "}
+                      in{" "}
+                      <code className="rounded bg-surface-subtle px-1 py-0.5">
+                        .env.local
+                      </code>{" "}
+                      to your real folder (e.g.{" "}
+                      <code className="rounded bg-surface-subtle px-1 py-0.5">
+                        D:\…\dummy profile pics
+                      </code>
+                      ), restart{" "}
+                      <code className="rounded bg-surface-subtle px-1 py-0.5">
+                        next dev
+                      </code>
+                      , then pick a file from that folder so the saved path matches
+                      your PC and preview can load it.
+                    </p>
+                  </span>
+                </label>
+              )}
+            />
+            {initialStore.coverMediaLocalPath &&
+              !initialStore.coverMediaUrl &&
+              !usesPaidStorage ? (
+              <p className="text-xs text-muted">
+                Saved local path:{" "}
+                <code className="rounded bg-surface-subtle px-1 py-0.5">
+                  {initialStore.coverMediaLocalPath}
+                </code>{" "}
+                — upload again to replace.
+              </p>
+            ) : null}
+          </div>
+
+          <MediaUploadFormField
+            key={usesPaidStorage ? "cloud" : "local"}
+            control={control}
+            name="coverMedia"
+            mode={usesPaidStorage ? "cloud" : "local"}
+            cloudUpload={
+              usesPaidStorage
+                ? async (file) => uploadStoreCoverMedia(storeId, file)
+                : undefined
+            }
+            label="Cover image or video (optional)"
+            description={
+              usesPaidStorage
+                ? "Uploads to Firebase Storage; the returned URL is saved on save."
+                : "Saves a real folder + file path when NEXT_PUBLIC_LOCAL_COVER_MEDIA_ROOT is set; otherwise local/cover/… (logical only)."
+            }
+            disabled={formLocked}
+            aspect={16 / 9}
+          />
+
+          <div className="space-y-3 rounded-lg border border-border p-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Visibility</h3>
+              <p className="mt-1 text-xs text-muted">
+                Draft stores show “not taking orders” on public QR links. Use
+                preview to check the guest screen before you go live.
+              </p>
+            </div>
+            <Controller
+              name="isLive"
+              control={control}
+              render={({ field }) => (
+                <label className="flex cursor-pointer items-start gap-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1 size-4 shrink-0 rounded border-border accent-[var(--color-accent)]"
+                    checked={field.value}
+                    disabled={formLocked}
+                    onChange={(e) => field.onChange(e.target.checked)}
+                    onBlur={field.onBlur}
+                    ref={field.ref}
+                  />
+                  <span className="min-w-0">
+                    <span className="font-medium text-foreground">
+                      Store is live (public ordering enabled)
+                    </span>
+                    <p className="mt-1 text-xs text-muted">
+                      Turn off to hide the guest menu from QR codes while you
+                      prepare.
+                    </p>
+                  </span>
+                </label>
+              )}
+            />
+            <Button variant="secondary" size="sm" asChild>
+              <Link
+                href={routeDashboardStorePreview(storeId)}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open preview in new tab
+              </Link>
+            </Button>
+          </div>
+
           <div className="flex flex-wrap gap-2 pt-2">
             <Button type="submit" disabled={formLocked}>
               {formLocked ? "Saving…" : "Save settings"}
