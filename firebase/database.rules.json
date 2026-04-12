@@ -15,6 +15,12 @@
           ".write": false
         }
       }
+    },
+    "orderWebPushSubscriptions": {
+      "$storeId": {
+        ".read": false,
+        ".write": false
+      }
     }
   }
 }

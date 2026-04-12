@@ -6,8 +6,10 @@ import { isFirebaseRealtimeDatabaseConfigured } from "@/config/config";
 import { ORDER_STATUS } from "@/lib/constants";
 import { getFirebaseAdminRealtimeDb } from "@/lib/firebase-admin";
 
-import { getStoreForOwner } from "./get-store-for-owner";
 import { RTDB_STORE_ORDERS_PATH } from "@/lib/rtdb-paths";
+
+import { getStoreForOwner } from "./get-store-for-owner";
+import { sendOrderStatusWebPushes } from "./send-order-status-web-pushes";
 
 const bodySchema = z
   .object({
@@ -58,10 +60,35 @@ export async function patchStoreOrderStatusForOwner(
     const rtdb = getFirebaseAdminRealtimeDb();
     const ref = rtdb.ref(`${RTDB_STORE_ORDERS_PATH}/${sid}/${oid}`);
     const snap = await ref.get();
-    if (snap.val() == null) {
+    const prev = snap.val() as Record<string, unknown> | null;
+    if (prev == null) {
       return { ok: false, status: 404, message: "Order not found." };
     }
-    await ref.update({ status: parsed.data.status });
+    const tableLabel =
+      typeof prev.tableLabel === "string" && prev.tableLabel.trim()
+        ? prev.tableLabel.trim()
+        : "Table";
+    const notifySecret =
+      typeof prev.notifySecret === "string" && prev.notifySecret.trim()
+        ? prev.notifySecret.trim()
+        : null;
+    const prevStatus =
+      prev.status === ORDER_STATUS.PENDING ||
+      prev.status === ORDER_STATUS.PREPARING ||
+      prev.status === ORDER_STATUS.COMPLETED
+        ? prev.status
+        : ORDER_STATUS.PENDING;
+    if (prevStatus !== parsed.data.status) {
+      await ref.update({ status: parsed.data.status });
+      void sendOrderStatusWebPushes({
+        storeId: sid,
+        orderId: oid,
+        storeName: storeResult.store.name,
+        tableLabel,
+        status: parsed.data.status,
+        notifySecret,
+      });
+    }
     return { ok: true };
   } catch {
     return {

@@ -4,6 +4,7 @@ import { isFirebaseRealtimeDatabaseConfigured } from "@/config/config";
 import { getFirebaseAdminRealtimeDb } from "@/lib/firebase-admin";
 
 import {
+  RTDB_ORDER_WEB_PUSH_SUBSCRIPTIONS_PATH,
   RTDB_STORE_ORDERS_PATH,
   RTDB_STORE_OWNER_INDEX_PATH,
 } from "@/lib/rtdb-paths";
@@ -43,6 +44,20 @@ export async function removeRtdbStoreOrdersSubtree(storeId: string): Promise<voi
   try {
     const db = getFirebaseAdminRealtimeDb();
     await db.ref(`${RTDB_STORE_ORDERS_PATH}/${id}`).remove();
+  } catch {
+    /* ignore */
+  }
+}
+
+export async function removeRtdbOrderWebPushSubscriptionsForStore(
+  storeId: string,
+): Promise<void> {
+  if (!isFirebaseRealtimeDatabaseConfigured()) return;
+  const id = storeId.trim();
+  if (!id) return;
+  try {
+    const db = getFirebaseAdminRealtimeDb();
+    await db.ref(`${RTDB_ORDER_WEB_PUSH_SUBSCRIPTIONS_PATH}/${id}`).remove();
   } catch {
     /* ignore */
   }

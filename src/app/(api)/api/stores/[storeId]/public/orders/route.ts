@@ -22,7 +22,10 @@ export async function POST(request: Request, context: RouteContext) {
         { status: result.status },
       );
     }
-    return NextResponse.json({ orderId: result.orderId }, { status: 201 });
+    return NextResponse.json(
+      { orderId: result.orderId, notifySecret: result.notifySecret },
+      { status: 201 },
+    );
   } catch (err: unknown) {
     logError(err, { context: "POST /api/stores/[storeId]/public/orders" });
     return NextResponse.json({ error: errorMessage(err) }, { status: 500 });

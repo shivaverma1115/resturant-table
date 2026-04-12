@@ -19,6 +19,8 @@ export const ROUTE_SEGMENTS = {
   TABLE: "table",
   /** Guest menu + cart + order (table label in `?table=`). */
   ORDER: "order",
+  ORDERS: "orders",
+  TRACK: "track",
 } as const;
 
 /** App paths (route groups like `(auth)` are not part of the URL). */
@@ -51,6 +53,22 @@ export function routeStoreOrderAtTable(storeId: string, tableLabel: string): str
 /** Same as {@link routeStoreOrderAtTable} — kept for existing call sites. */
 export function routeStoreTable(storeId: string, tableId: string): string {
   return routeStoreOrderAtTable(storeId, tableId);
+}
+
+/**
+ * Guest order tracking (line items + status). `secret` is the per-order `notifySecret`
+ * from when the order was placed (included in push notification URLs).
+ */
+export function routeStoreOrderTrack(
+  storeId: string,
+  orderId: string,
+  notifySecret: string,
+): string {
+  const s = encodeURIComponent(storeId.trim());
+  const o = encodeURIComponent(orderId.trim());
+  const q = new URLSearchParams();
+  q.set("secret", notifySecret);
+  return `/${ROUTE_SEGMENTS.STORE}/${s}/${ROUTE_SEGMENTS.ORDERS}/${o}/${ROUTE_SEGMENTS.TRACK}?${q.toString()}`;
 }
 
 /** Owner dashboard: settings for a specific store document. */
@@ -150,6 +168,7 @@ export const TWITTER = {
 
 export const PAGE_TITLES = {
   TABLE_ORDER: "Order at table",
+  ORDER_TRACKING: "Order tracking",
 } as const;
 
 export function tableOrderMetaDescription(brandName: string): string {

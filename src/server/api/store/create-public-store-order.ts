@@ -1,5 +1,7 @@
 import "server-only";
 
+import { randomUUID } from "node:crypto";
+
 import { z } from "zod";
 
 import type { StoreItemDto } from "@/features/store-items/types";
@@ -35,7 +37,7 @@ function sanitizeTableLabel(raw: string): string {
 }
 
 export type CreatePublicStoreOrderResult =
-  | { ok: true; orderId: string }
+  | { ok: true; orderId: string; notifySecret: string }
   | { ok: false; status: number; message: string };
 
 export async function createPublicStoreOrder(
@@ -128,15 +130,17 @@ export async function createPublicStoreOrder(
     }
 
     const status: OrderStatus = ORDER_STATUS.PENDING;
+    const notifySecret = randomUUID();
     await ref.set({
       tableLabel,
       status,
       lines: linesOut,
       totalCents,
       createdAt: Date.now(),
+      notifySecret,
     });
 
-    return { ok: true, orderId };
+    return { ok: true, orderId, notifySecret };
   } catch {
     return {
       ok: false,

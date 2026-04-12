@@ -5,6 +5,7 @@ import { getFirebaseAdminFirestore } from "@/lib/firebase-admin";
 import { mapStoreDocToDto } from "./map-store-doc";
 import { STORES_COLLECTION } from "./store-constants";
 import {
+  removeRtdbOrderWebPushSubscriptionsForStore,
   removeRtdbStoreOrdersSubtree,
   removeRtdbStoreOwnerIndex,
 } from "./sync-rtdb-store-owner-index";
@@ -40,6 +41,7 @@ export async function deleteStoreForOwner(
 
     await removeRtdbStoreOwnerIndex(id);
     await removeRtdbStoreOrdersSubtree(id);
+    await removeRtdbOrderWebPushSubscriptionsForStore(id);
     await ref.delete();
     return { ok: true };
   } catch {
