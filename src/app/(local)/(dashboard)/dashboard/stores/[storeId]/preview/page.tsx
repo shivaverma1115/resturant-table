@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { redirect } from "next/navigation";
 
-import { PageLoading } from "@/components/shared/PageLoading";
-import { PRODUCT } from "@/lib/constants";
-
-import { StorePreviewPageWrapper } from "./components/StorePreviewPageWrapper";
+import { PRODUCT, routeStoreHome } from "@/lib/constants";
 
 type PageProps = Readonly<{
   params: Promise<{ storeId: string }>;
@@ -23,12 +20,5 @@ export async function generateMetadata({
 
 export default async function DashboardStorePreviewPage({ params }: PageProps) {
   const { storeId } = await params;
-
-  return (
-    <Suspense
-      fallback={<PageLoading compact message="Loading store preview…" />}
-    >
-      <StorePreviewPageWrapper storeId={storeId} />
-    </Suspense>
-  );
+  redirect(routeStoreHome(storeId));
 }

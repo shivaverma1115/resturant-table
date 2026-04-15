@@ -1,0 +1,10 @@
+export { StoreHeroCarousel } from "@/features/public-store/components/StoreHeroCarousel";
+export { StoreAboutPreviewSection } from "@/features/public-store/components/StoreAboutPreviewSection";
+export { StoreServicesPreviewSection } from "@/features/public-store/components/StoreServicesPreviewSection";
+export { StorePopularMenuPreviewSection } from "@/features/public-store/components/StorePopularMenuPreviewSection";
+export { StoreWhyChooseSection } from "@/features/public-store/components/StoreWhyChooseSection";
+export { StoreScrollableImageStripSection } from "@/features/public-store/components/StoreScrollableImageStripSection";
+export { StoreClientFeedbackSection } from "@/features/public-store/components/StoreClientFeedbackSection";
+export { StoreStatsStripSection } from "@/features/public-store/components/StoreStatsStripSection";
+export { StoreBlogNewsSection } from "@/features/public-store/components/StoreBlogNewsSection";
+export { StoreBookingParallaxSection } from "@/features/public-store/components/StoreBookingParallaxSection";

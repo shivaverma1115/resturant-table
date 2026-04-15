@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { PRODUCT, ROUTES } from "@/lib/constants";
+import { ROUTES } from "@/lib/constants";
+import { createDashboardMetadata } from "@/features/dashboard/lib/dashboard-metadata";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createDashboardMetadata({
   title: "Orders",
-  description: `View and manage orders on ${PRODUCT.NAME}.`,
-  robots: { index: false, follow: true },
-  openGraph: {
-    title: `Orders | ${PRODUCT.NAME}`,
-    url: ROUTES.DASHBOARD_ORDERS,
-  },
-};
+  description: "View and manage orders.",
+  url: ROUTES.DASHBOARD_ORDERS,
+});
 
 export default function DashboardOrdersPage() {
   return (

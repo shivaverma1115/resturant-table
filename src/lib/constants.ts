@@ -32,7 +32,6 @@ export const ROUTES = {
   SIGNUP: "/signup",
   DASHBOARD: "/dashboard",
   DASHBOARD_STORES: "/dashboard/stores",
-  DASHBOARD_STORE_SETTINGS: "/dashboard/stores/settings",
   DASHBOARD_ORDERS: "/dashboard/orders",
   DASHBOARD_PROFILE: "/dashboard/profile",
   ADMIN: "/admin",
@@ -74,6 +73,33 @@ export function routeStoreOrderTrack(
   return `/${ROUTE_SEGMENTS.STORE}/${s}/${ROUTE_SEGMENTS.ORDERS}/${o}/${ROUTE_SEGMENTS.TRACK}?${q.toString()}`;
 }
 
+/** Public store landing page for guests and owner preview. */
+export function routeStoreHome(storeId: string): string {
+  const s = encodeURIComponent(storeId.trim());
+  return `/${ROUTE_SEGMENTS.STORE}/${s}`;
+}
+
+/** Public store pages (owner can preview while signed in). */
+export function routeStoreAbout(storeId: string): string {
+  const s = encodeURIComponent(storeId.trim());
+  return `/${ROUTE_SEGMENTS.STORE}/${s}/about`;
+}
+
+export function routeStoreItemsPage(storeId: string): string {
+  const s = encodeURIComponent(storeId.trim());
+  return `/${ROUTE_SEGMENTS.STORE}/${s}/items`;
+}
+
+export function routeStoreCart(storeId: string): string {
+  const s = encodeURIComponent(storeId.trim());
+  return `/${ROUTE_SEGMENTS.STORE}/${s}/cart`;
+}
+
+export function routeStoreContact(storeId: string): string {
+  const s = encodeURIComponent(storeId.trim());
+  return `/${ROUTE_SEGMENTS.STORE}/${s}/contact`;
+}
+
 /** Owner dashboard: settings for a specific store document. */
 export function routeDashboardStoreSettings(storeId: string): string {
   const s = encodeURIComponent(storeId);
@@ -88,8 +114,8 @@ export function routeDashboardStoreEdit(storeId: string): string {
 
 /** Owner dashboard: preview guest ordering UI before going live. */
 export function routeDashboardStorePreview(storeId: string): string {
-  const s = encodeURIComponent(storeId);
-  return `${ROUTES.DASHBOARD_STORES}/${s}/preview`;
+  // Legacy helper kept for existing call sites; now opens the real public store.
+  return routeStoreHome(storeId);
 }
 
 /** Owner dashboard: add/edit menu line items for a store. */

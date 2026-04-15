@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageLoading } from "@/components/shared/PageLoading";
-import { PRODUCT } from "@/lib/constants";
-import { requireSessionUid } from "@/server/api/auth/require-session";
-import { getStoreForOwner } from "@/server/api/store/get-store-for-owner";
+import { createOwnerStoreMetadata } from "@/features/dashboard/stores/lib/owner-store-metadata";
 
 import { StoreOrdersPageWrapper } from "./components/StoreOrdersPageWrapper";
 
@@ -13,25 +11,11 @@ type PageProps = Readonly<{
 }>;
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { storeId } = await params;
-  const session = await requireSessionUid();
-  if (!session.ok) {
-    return {
-      title: `Live orders | ${PRODUCT.NAME}`,
-      robots: { index: false, follow: true },
-    };
-  }
-  const result = await getStoreForOwner(session.uid, storeId);
-  if (!result.ok) {
-    return {
-      title: `Live orders | ${PRODUCT.NAME}`,
-      robots: { index: false, follow: true },
-    };
-  }
-  return {
-    title: `Live orders · ${result.store.name} | ${PRODUCT.NAME}`,
-    robots: { index: false, follow: true },
-  };
+  return createOwnerStoreMetadata({
+    params,
+    fallbackTitle: "Live orders",
+    withStoreTitle: (storeName) => `Live orders · ${storeName}`,
+  });
 }
 
 export default async function DashboardStoreOrdersPage({ params }: PageProps) {

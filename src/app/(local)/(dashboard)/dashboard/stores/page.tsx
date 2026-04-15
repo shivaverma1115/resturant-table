@@ -2,19 +2,16 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageLoading } from "@/components/shared/PageLoading";
-import { PRODUCT, ROUTES } from "@/lib/constants";
+import { ROUTES } from "@/lib/constants";
+import { createDashboardMetadata } from "@/features/dashboard/lib/dashboard-metadata";
 
 import { DashboardStoresWrapper } from "./components/DashboardStoresWrapper";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createDashboardMetadata({
   title: "Stores",
-  description: `Manage your restaurant stores on ${PRODUCT.NAME}.`,
-  robots: { index: false, follow: true },
-  openGraph: {
-    title: `Stores | ${PRODUCT.NAME}`,
-    url: ROUTES.DASHBOARD_STORES,
-  },
-};
+  description: "Manage your restaurant stores.",
+  url: ROUTES.DASHBOARD_STORES,
+});
 
 export default function DashboardStoresPage() {
   return (

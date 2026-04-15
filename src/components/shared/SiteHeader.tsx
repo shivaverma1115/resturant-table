@@ -54,6 +54,11 @@ export function SiteHeader({ firebaseWebReady }: SiteHeaderProps) {
 
   const activeHref = headerActiveHref(pathname);
 
+  // Public store pages have their own scoped header/footer layout.
+  if (pathname.startsWith("/store/")) {
+    return null;
+  }
+
   async function handleSignOut() {
     setSigningOut(true);
     try {

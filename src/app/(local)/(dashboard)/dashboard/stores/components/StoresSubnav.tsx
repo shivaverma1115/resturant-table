@@ -8,7 +8,6 @@ import { ROUTES } from "@/lib/constants";
 
 const ITEMS = [
   { href: ROUTES.DASHBOARD_STORES, label: "My stores" },
-  { href: ROUTES.DASHBOARD_STORE_SETTINGS, label: "Store settings" },
 ] as const;
 
 function isActive(pathname: string, href: string): boolean {
@@ -20,15 +19,6 @@ function isActive(pathname: string, href: string): boolean {
     // Per-store settings, preview, or edit are not the list tab.
     return !/\/stores\/[^/]+\/(settings|preview|edit|items|qr|orders)/.test(
       pathname,
-    );
-  }
-  if (href === ROUTES.DASHBOARD_STORE_SETTINGS) {
-    return (
-      pathname === ROUTES.DASHBOARD_STORE_SETTINGS ||
-      pathname === `${ROUTES.DASHBOARD_STORE_SETTINGS}/` ||
-      /\/stores\/[^/]+\/settings/.test(pathname) ||
-      /\/stores\/[^/]+\/edit/.test(pathname) ||
-      /\/stores\/[^/]+\/(items|qr|orders)/.test(pathname)
     );
   }
   return pathname === href || pathname.startsWith(`${href}/`);
