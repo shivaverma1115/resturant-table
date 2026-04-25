@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 
-import { useAuthUser } from "@/components/shared/AuthProvider";
+import { useAuthUser } from "@/components/providers/AuthProvider";
 import {
   FormFieldError,
   formFieldAriaErrorId,

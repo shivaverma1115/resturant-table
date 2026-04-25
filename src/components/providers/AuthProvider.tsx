@@ -17,10 +17,12 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   /**
-   * Whether the httpOnly session cookie is accepted by `/api/auth/me`.
+   * Whether the httpOnly session cookie (see `@/lib/cookies`) is accepted by `/api/auth/me`.
    * `null` until the first check finishes (avoid flashing the wrong UI).
    */
   httpSession: boolean | null;
+  /** `true` when Firebase web config exists (client SDK may be used). */
+  firebaseWebReady: boolean;
   /** Re-run the server session check (e.g. after email/password success on `/signup`). */
   refreshHttpSession: () => Promise<void>;
   /** Clear local knowledge of the cookie after sign-out (no network round-trip). */
@@ -31,8 +33,9 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
   httpSession: null,
-  refreshHttpSession: async () => {},
-  clearHttpSession: () => {},
+  firebaseWebReady: false,
+  refreshHttpSession: async () => { },
+  clearHttpSession: () => { },
 });
 
 type AuthProviderProps = Readonly<{
@@ -40,6 +43,78 @@ type AuthProviderProps = Readonly<{
   /** `true` when `getFirebaseWebClientConfig()` succeeded on the server. */
   firebaseWebReady: boolean;
 }>;
+
+type AuthState = Readonly<{
+  user: User | null;
+  loading: boolean;
+  httpSession: boolean | null;
+}>;
+
+export function AuthProvider({
+  children,
+  firebaseWebReady,
+}: AuthProviderProps) {
+  const [auth, setAuth] = useState<AuthState>(() => ({
+    user: null,
+    loading: firebaseWebReady,
+    httpSession: null,
+  }));
+
+  const refreshHttpSession = useCallback(async () => {
+    const next = await fetchHttpSessionStatus();
+    if (next === undefined) return;
+    setAuth((prev) => ({ ...prev, httpSession: next }));
+  }, []);
+
+  const clearHttpSession = useCallback(() => {
+    setAuth((prev) => ({ ...prev, httpSession: false }));
+  }, []);
+
+  useEffect(() => {
+    if (!firebaseWebReady) {
+      setAuth((prev) => ({ ...prev, loading: false }));
+      return;
+    }
+    let unsub: (() => void) | undefined;
+    try {
+      const authClient = getFirebaseClientAuth();
+      unsub = onAuthStateChanged(authClient, (u) => {
+        setAuth((prev) => ({ ...prev, user: u, loading: false }));
+      });
+    } catch {
+      setAuth((prev) => ({ ...prev, loading: false }));
+    }
+    return () => unsub?.();
+  }, [firebaseWebReady]);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    void (async () => {
+      const next = await fetchHttpSessionStatus(ac.signal);
+      if (next === undefined) return;
+      setAuth((prev) => ({ ...prev, httpSession: next }));
+    })();
+    return () => ac.abort();
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      user: auth.user,
+      loading: auth.loading,
+      httpSession: auth.httpSession,
+      firebaseWebReady,
+      refreshHttpSession,
+      clearHttpSession,
+    }),
+    [auth, firebaseWebReady, refreshHttpSession, clearHttpSession],
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuthUser(): AuthContextValue {
+  return useContext(AuthContext);
+}
 
 async function fetchHttpSessionStatus(
   signal?: AbortSignal,
@@ -64,68 +139,4 @@ async function fetchHttpSessionStatus(
     if (signal?.aborted) return undefined;
     return false;
   }
-}
-
-export function AuthProvider({
-  children,
-  firebaseWebReady,
-}: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState(() => firebaseWebReady);
-  const [httpSession, setHttpSession] = useState<boolean | null>(null);
-
-  const refreshHttpSession = useCallback(async () => {
-    const next = await fetchHttpSessionStatus();
-    if (next === undefined) return;
-    setHttpSession(next);
-  }, []);
-
-  const clearHttpSession = useCallback(() => {
-    setHttpSession(false);
-  }, []);
-
-  useEffect(() => {
-    if (!firebaseWebReady) {
-      setLoading(false);
-      return;
-    }
-    let unsub: (() => void) | undefined;
-    try {
-      const auth = getFirebaseClientAuth();
-      unsub = onAuthStateChanged(auth, (u) => {
-        setUser(u);
-        setLoading(false);
-      });
-    } catch {
-      setLoading(false);
-    }
-    return () => unsub?.();
-  }, [firebaseWebReady]);
-
-  useEffect(() => {
-    const ac = new AbortController();
-    void (async () => {
-      const next = await fetchHttpSessionStatus(ac.signal);
-      if (next === undefined) return;
-      setHttpSession(next);
-    })();
-    return () => ac.abort();
-  }, []);
-
-  const value = useMemo(
-    () => ({
-      user,
-      loading,
-      httpSession,
-      refreshHttpSession,
-      clearHttpSession,
-    }),
-    [user, loading, httpSession, refreshHttpSession, clearHttpSession],
-  );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuthUser(): AuthContextValue {
-  return useContext(AuthContext);
 }

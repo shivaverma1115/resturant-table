@@ -57,6 +57,7 @@ export function GuestOrderExperience({
   const [notifyBusy, setNotifyBusy] = useState(false);
 
   const sid = encodeURIComponent(storeId.trim());
+  const guestUserId = encodeURIComponent(tableLabel.trim() || "guest");
 
   useEffect(() => {
     const ac = new AbortController();
@@ -121,7 +122,7 @@ export function GuestOrderExperience({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const res = await fetch(`/api/stores/${sid}/public/orders`, {
+      const res = await fetch(`/api/stores/${sid}/public/items/${guestUserId}/orders`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -168,7 +169,7 @@ export function GuestOrderExperience({
     } finally {
       setSubmitting(false);
     }
-  }, [cartLines, sid, tableLabel]);
+  }, [cartLines, guestUserId, sid, tableLabel]);
 
   const dismissNotifyDialog = useCallback(() => {
     setNotifyDialogOpen(false);

@@ -3,7 +3,7 @@
  * Firebase env and `firebaseConfig` live in `@/config/config` (single `.env` file).
  */
 
-/** HttpOnly Firebase session cookie (JWT from Admin `createSessionCookie`). */
+/** HttpOnly Firebase session cookie — read/write helpers live in `@/lib/cookies`. */
 export const AUTH_COOKIE = {
   SESSION_NAME: "fb_session",
 } as const;

@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { ACCOUNT_DELETE_CONFIRM_PHRASE } from "@/lib/constants";
-import { deleteAuthSessionCookie } from "@/lib/cookies/auth-session-cookie";
+import { deleteAuthSessionCookie } from "@/lib/cookies";
 import { logError } from "@/lib/utils/logError";
 import { deleteUserAccount } from "@/server/api/account/delete-user-account";
 import { requireSessionUid } from "@/server/api/auth/require-session";

@@ -25,6 +25,7 @@ const lineSchema = z.object({
 const bodySchema = z
   .object({
     tableLabel: z.string().min(1).max(80),
+    userId: z.string().trim().min(1).max(128).optional(),
     lines: z.array(lineSchema).min(1).max(40),
   })
   .strict();
@@ -63,6 +64,7 @@ export async function createPublicStoreOrder(
   if (!tableLabel) {
     return { ok: false, status: 400, message: "Enter a table or area label." };
   }
+  const userId = parsed.data.userId?.trim() ?? "";
 
   const pub = await getStoreForPublicOrder(storeId);
   if (!pub.ok) {
@@ -133,6 +135,7 @@ export async function createPublicStoreOrder(
     const notifySecret = randomUUID();
     await ref.set({
       tableLabel,
+      userId: userId || null,
       status,
       lines: linesOut,
       totalCents,

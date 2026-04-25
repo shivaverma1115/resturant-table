@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 import { createSessionFromIdToken } from "@/server/api/auth/create-session";
-import { setAuthSessionCookie } from "@/lib/cookies/auth-session-cookie";
+import { setAuthSessionCookie } from "@/lib/cookies";
 
 export async function POST(request: Request) {
   let body: unknown;

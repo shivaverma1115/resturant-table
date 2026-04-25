@@ -1,12 +1,8 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-import { AUTH_COOKIE, ROUTES } from "@/lib/constants";
-
-function hasSessionCookie(request: NextRequest): boolean {
-  const v = request.cookies.get(AUTH_COOKIE.SESSION_NAME)?.value;
-  return Boolean(v?.trim());
-}
+import { hasAuthSessionCookie } from "@/lib/cookies";
+import { ROUTES } from "@/lib/constants";
 
 function guestMayVisit(pathname: string): boolean {
   if (pathname === "/") return true;
@@ -18,7 +14,7 @@ function guestMayVisit(pathname: string): boolean {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const loggedIn = hasSessionCookie(request);
+  const loggedIn = hasAuthSessionCookie(request);
 
   if (pathname.startsWith("/signup")) {
     if (loggedIn) {

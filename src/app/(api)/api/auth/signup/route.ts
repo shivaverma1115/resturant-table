@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { logError } from "@/lib/utils/logError";
 import { signupWithSession } from "@/server/api/auth/signup";
-import { setAuthSessionCookie } from "@/lib/cookies/auth-session-cookie";
+import { setAuthSessionCookie } from "@/lib/cookies";
 import { ERROR_MESSAGE_GENERIC } from "@/lib/constants";
 
 export async function POST(request: NextRequest) {

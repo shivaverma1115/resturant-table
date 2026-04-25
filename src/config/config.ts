@@ -72,7 +72,7 @@ export function getFirebaseWebClientConfig(): FirebaseWebClientConfig | null {
  */
 export function getFirebaseRealtimeDatabaseUrl(): string | null {
   const explicit =
-    process.env.FIREBASE_DATABASE_URL?.trim() ||
+    // process.env.FIREBASE_DATABASE_URL?.trim() ||
     process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL?.trim();
   return explicit || null;
 }

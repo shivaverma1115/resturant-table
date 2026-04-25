@@ -2,7 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 
-import { getAuthSessionCookie } from "@/lib/cookies/auth-session-cookie";
+import { getAuthSessionCookie } from "@/lib/cookies";
 import { getFirebaseAdminAuth, isFirebaseAdminConfigured } from "@/lib/firebase-admin";
 
 export type RequireSessionResult =

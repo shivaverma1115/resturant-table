@@ -1,11 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { AuthProvider } from "@/components/shared/AuthProvider";
-import { FirebaseConfigBridge } from "@/components/shared/FirebaseConfigBridge";
-import { SiteHeader } from "@/components/shared/SiteHeader";
-import { ThemeProvider } from "@/components/shared/ThemeProvider";
-import { ToasterProvider } from "@/components/shared/ToasterProvider";
+import { AppRootProviders } from "@/components/providers";
 import { getFirebaseWebClientConfig } from "@/config/config";
 import { rootMetadata } from "@/lib/site";
 
@@ -29,7 +25,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const firebaseWebConfig = getFirebaseWebClientConfig();
-  const firebaseWebReady = firebaseWebConfig !== null;
 
   return (
     <html
@@ -41,16 +36,9 @@ export default function RootLayout({
         className="flex min-h-dvh w-full flex-col"
         suppressHydrationWarning
       >
-        <ThemeProvider>
-          <FirebaseConfigBridge config={firebaseWebConfig} />
-          <AuthProvider firebaseWebReady={firebaseWebReady}>
-            <ToasterProvider />
-            <SiteHeader firebaseWebReady={firebaseWebReady} />
-            <div className="flex min-h-dvh w-full min-w-0 flex-1 flex-col">
-              {children}
-            </div>
-          </AuthProvider>
-        </ThemeProvider>
+        <AppRootProviders firebaseWebConfig={firebaseWebConfig}>
+          {children}
+        </AppRootProviders>
       </body>
     </html>
   );

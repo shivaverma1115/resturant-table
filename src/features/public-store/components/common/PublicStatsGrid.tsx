@@ -6,7 +6,7 @@ type PublicStatItem = Readonly<{
 }>;
 
 type PublicStatsGridProps = Readonly<{
-  stats: PublicStatItem[];
+  stats: readonly PublicStatItem[];
   columns?: 2 | 3 | 4;
 }>;
 
