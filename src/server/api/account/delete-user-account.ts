@@ -43,9 +43,7 @@ export type DeleteUserAccountResult =
  */
 export async function deleteUserAccount(uid: string): Promise<DeleteUserAccountResult> {
   const id = uid.trim();
-  if (!id) {
-    return { ok: false, status: 400, message: "Invalid account." };
-  }
+  if (!id) return { ok: false, status: 400, message: "Invalid account." };
 
   try {
     const db = getFirebaseAdminFirestore();

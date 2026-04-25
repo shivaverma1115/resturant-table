@@ -5,8 +5,9 @@ import { z } from "zod";
 import { ACCOUNT_DELETE_CONFIRM_PHRASE } from "@/lib/constants";
 import { deleteAuthSessionCookie } from "@/lib/cookies";
 import { logError } from "@/lib/utils/logError";
-import { deleteUserAccount } from "@/server/api/account/delete-user-account";
+import { deleteUserAccount, DeleteUserAccountResult } from "@/server/api/account/delete-user-account";
 import { requireSessionUid } from "@/server/api/auth/require-session";
+import { errorMessage } from "@/lib/helpers";
 
 const bodySchema = z
   .object({
@@ -14,38 +15,17 @@ const bodySchema = z
   })
   .strict();
 
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message.trim() : "Unexpected error.";
-}
-
 export async function POST(request: Request) {
   try {
     const session = await requireSessionUid();
-    if (!session.ok) {
-      return NextResponse.json(
-        { error: session.message },
-        { status: session.status },
-      );
-    }
+    if (!session.ok) return NextResponse.json({ error: session.message }, { status: session.status });
 
-    const body: unknown = await request.json().catch(() => null);
+    const body = await request.json().catch(() => ({}));
     const parsed = bodySchema.safeParse(body);
-    if (!parsed.success) {
-      return NextResponse.json(
-        {
-          error: `Type the exact phrase ${ACCOUNT_DELETE_CONFIRM_PHRASE} to confirm account deletion.`,
-        },
-        { status: 400 },
-      );
-    }
+    if (!parsed.success) return NextResponse.json({ error: `Type the exact phrase ${ACCOUNT_DELETE_CONFIRM_PHRASE} to confirm account deletion.` }, { status: 400 });
 
-    const result = await deleteUserAccount(session.uid);
-    if (!result.ok) {
-      return NextResponse.json(
-        { error: result.message },
-        { status: result.status },
-      );
-    }
+    const result:DeleteUserAccountResult = await deleteUserAccount(session.uid);
+    if (!result.ok) return NextResponse.json({ error: result.message }, { status: result.status });
 
     const cookieStore = await cookies();
     deleteAuthSessionCookie(cookieStore);
@@ -55,7 +35,18 @@ export async function POST(request: Request) {
       deletedStoreCount: result.deletedStoreCount,
     });
   } catch (err: unknown) {
-    logError(err, { context: "POST /api/account/delete" });
-    return NextResponse.json({ error: errorMessage(err) }, { status: 500 });
+    logError(err,
+      {
+        context: "Account Delete API",
+        meta: { url: "/api/account/delete", method: "POST" },
+      }
+    );
+    return NextResponse.json({
+      error: errorMessage(err),
+      message: "Failed to delete account.",
+      status: 500,
+    },
+      { status: 500 }
+    );
   }
 }
